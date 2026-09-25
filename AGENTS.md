@@ -148,6 +148,65 @@ UI, `app/freight/` for the demo site (its five releases are defined in
 `freight/releases.py`), and `app/core/tests.py` + `app/freight/tests.py`
 for the unit tests.
 
+## Maintaining this repository
+
+**Updating `app/` from upstream.** Copy a release of the main project's
+`app/` over this one, then check that nothing else differs:
+```bash
+rsync -a --delete --exclude __pycache__ --exclude '*.pyc' --exclude .DS_Store \
+      --exclude dev.sh --exclude 'requirements*.txt' --exclude '*.before-*' \
+      <main project>/app/ app/
+```
+Then update the version named in the README. `docs/TESTHUB.md` is the
+upstream manual plus two local edits, which must be re-applied after
+copying it: the "Reading this in the laptop edition" note after its
+introduction, and its `docs/AWS.md` link turned into plain text (that file
+is not in this repository). Finish with `./testhub.sh unit-tests` and a
+Python + TypeScript sample run.
+
+**`testhub.sh` rules, each learned the hard way:**
+- It must run on **bash 3.2** (macOS `/bin/bash`): no associative arrays,
+  no `mapfile`, no `${var,,}`, and never expand a possibly-empty array
+  under `set -u`. Check with `/bin/bash -n testhub.sh`, then really run it
+  with `/bin/bash`.
+- **The hub's process is identified by its command AND its working
+  directory**, never by its command line alone. Homebrew's framework Python
+  re-executes itself as `…/Python.app/Contents/MacOS/Python`, so the
+  `.venv` path never shows in `ps`; macOS `ps` truncates long lines without
+  `-ww`; and a text search through `ps` output also matches the searching
+  process itself. The working directory (`lsof` on macOS, `/proc` on Linux)
+  is this repo's `app/`, from `pwd -P`.
+- Background the Python executable itself (`nohup "$VPY" manage.py serve &`),
+  never a shell function, so `$!` is the server and `stop` signals the
+  right process.
+- Setup launches each browser once to prove it works, and on failure prints
+  ONE line of reason plus the fix (`sudo .venv/bin/python -m playwright
+  install-deps chromium` on Linux), not a traceback.
+
+**Test a change on both platforms before calling it done:** macOS (with
+`/bin/bash`) and Linux. For Linux on a Mac, Docker with
+`node:22-bookworm` (Debian 12, Python 3.11, Node 22) or
+`python:3.12-bookworm` works. colima shares only your home folder with its
+VM, so stream a clean copy in rather than bind-mounting a temp folder:
+```bash
+{ git ls-files; git ls-files -o --exclude-standard; } | tar -cf - -T - \
+  | docker run -i --rm node:22-bookworm bash -c \
+      'mkdir /w && tar -xf - -C /w && cd /w && apt-get update -qq && apt-get install -y -qq python3-venv \
+       && ./testhub.sh setup && .venv/bin/python -m playwright install-deps chromium \
+       && ./testhub.sh setup && ./testhub.sh start && ./testhub.sh run DEMO-010 DEMO-T12 \
+       && ./testhub.sh manage watch 1 && ./testhub.sh manage watch 2 && ./testhub.sh stop'
+```
+Both runs must end `finished: PASSED`. Also try a fresh copy on the Mac with
+another Python (`PYTHON=python3.9 ./testhub.sh setup`) and another port
+(`config.json`).
+
+**Docs.** Every command, path, UI label and test id quoted in a `.md` file
+must exist. Check them against `testhub.sh`, `app/core/management/commands/`,
+the templates and `app/sample_tests/`, and check tables and anchors with
+GitHub's own renderer (`POST https://api.github.com/markdown`). README
+screenshots come from a clean history: reset `data/`, run the demo story
+across its releases, then capture them (`docs/images/`).
+
 ## When something is wrong
 
 | symptom | look at |
