@@ -8,12 +8,18 @@ one `config.json`.
 Built for the same world as the rest of this repo: **air-gapped RHEL 8.10 /
 CentOS 7.9 boxes**, updated by carrying zips on a disk.
 
-> **Reading this in the laptop edition (`test-hub`)?** This manual is written
-> for installed lab machines. Here, `testhub <command>` is
-> `./testhub.sh manage <command>` (or the shortcuts in the README: `start`,
-> `stop`, `run`, `demo-release`), `/opt/pw-testhub/` is this folder, the
-> hub listens on http://127.0.0.1:8880/ by default, and the installers,
-> kits, fapolicyd and systemd sections do not apply.
+> **Reading this in the laptop edition (`test-hub`)?** This manual is shared
+> with the offline-deployment project and written for installed lab
+> machines. In this repository:
+> - `testhub <command>` is `./testhub.sh manage <command>`, with shortcuts
+>   `./testhub.sh start | stop | status | run | demo-release`;
+>   `./app/dev.sh` is `./testhub.sh setup` then `start`, and
+>   `./app/dev.sh test` is `./testhub.sh unit-tests`;
+> - `/opt/pw-testhub/` is this folder, the TypeScript engine is `.pw-ts/`
+>   rather than `/opt/pw-ts`, and the hub listens on http://127.0.0.1:8880/;
+> - `make …` targets, `docs/AWS.md`, `appbundle/`, `appkit_ts_py/`,
+>   `scripts/`, the installers and kits, pwlab, fapolicyd and systemd all
+>   belong to the main project and do not apply here.
 
 ---
 
@@ -51,6 +57,10 @@ and says so in a banner.
                       # then serves http://127.0.0.1:8880/
 ./app/dev.sh test     # run the unit test suite
 ```
+
+A standalone copy of the hub for laptops (the `test-hub` repository) wraps
+the same thing in `./testhub.sh setup | start | stop | status`, with its
+own README.
 
 ### Under pwlab (the docker everything-image, e.g. an EC2 box)
 
@@ -94,7 +104,7 @@ group / firewall, browse to `http://<machine>:8880/`.
 To serve the hub **under your existing app's URL** —
 `https://app.example.com/testhub/` behind the same ALB and certificate —
 set `site.url_prefix`, `site.public_url` and `site.behind_proxy` and add an
-ALB path rule. **[`docs/AWS.md`](AWS.md)** is the step-by-step for the
+ALB path rule. **`docs/AWS.md`** (in the main project) is the step-by-step for the
 deployed shape — one EC2 instance reached by IP; putting it behind a real
 domain/ALB (with OIDC/Cognito login) is noted there as a later add-on.
 
@@ -476,10 +486,17 @@ trusting it: proving a test is real is the hub's job, not the agent's.
 
 ## TypeScript tests
 
-Requires the **TS engine add-on** installed at `/opt/pw-ts` (RHEL 8 only
-— Node 22 needs glibc ≥ 2.28, so CentOS 7 cannot host it). The
-combination kit (`appkit_ts_py`, guide `INSTALL-TS-PY.md`) installs the
-engine and the hub with one installer.
+Requires a TS engine at `/opt/pw-ts`. On RHEL 8 that is the **TS engine
+add-on**: Playwright **1.58.2** exactly, the version the team's TypeScript
+repos are written against. On CentOS 7 it is the **native CentOS 7
+engine** (`tskit-centos7`): Playwright **1.35**, the newest that runs on
+glibc 2.17. The 1.58 style (`getBy*`, web-first `expect`) runs unchanged
+there, but the 2023+ APIs (`page.clock`, aria snapshots,
+`addLocatorHandler`) do not exist, and `pw-tsc --noEmit` rejects a spec
+that uses them before it ever runs. The docker everything-image runs the
+exact 1.58.2 on either OS. On RHEL 8, the combination kit (`appkit_ts_py`,
+guide `INSTALL-TS-PY.md`) installs the engine and the hub with one
+installer.
 
 A TypeScript test is a completely standard `@playwright/test` spec:
 
@@ -1028,7 +1045,9 @@ laptop sleep. Toggle: **Settings → Keep this machine awake while tests run**
 It is deliberately *not* held for the whole life of `serve`: a hub that is up
 but idle has no business keeping a machine awake all week.
 
-`testhub doctor` reports whether a lock can be taken at all.
+`testhub doctor` reports whether a lock can be taken at all. A Mac (the
+laptop edition) has no such lock; there doctor says so, and how to keep the
+Mac awake for unattended schedules.
 
 ### What it cannot do
 
@@ -1455,9 +1474,10 @@ as root (the systemd service does); under the hood it is
 
 One command answers "why isn't this working?" — Python, Playwright,
 bundled browsers, an actual browser launch, SQLite version, pending
-migrations, folder permissions, free disk, timezone validity, runner
-state and target reachability — each with a sentence saying what to do
-about it. Exit code 1 if anything failed, so it can gate a script. The
+migrations, folder permissions, free disk, timezone validity, whether a
+hub is serving and running tests (from the terminal, doctor asks the
+running hub; it has no runner of its own), and target reachability —
+each with a sentence saying what to do about it. Exit code 1 if anything failed, so it can gate a script. The
 same checks appear on the **Settings** page (with a button to re-run the
 slow browser-launch check).
 

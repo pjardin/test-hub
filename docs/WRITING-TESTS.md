@@ -228,6 +228,16 @@ test: history is kept, and it can be restored from *Settings*.
 new build is deployed. Every run records it, and *Analytics* then answers
 "what did the new release break, or slow down?" test by test.
 
+## Scaffolding from the terminal
+
+```bash
+./testhub.sh manage new LOGIN-001 "Sign in"          # Python
+./testhub.sh manage new LOGIN-T01 "Sign in" --ts     # TypeScript
+```
+
+This creates a working starter test and its settings file in the tests
+folder, already known to the hub. Edit it, then `./testhub.sh run LOGIN-001`.
+
 ## Recording instead of typing
 
 *Tests → Record new test* opens the **Remote Recorder**. A browser runs on

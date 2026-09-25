@@ -259,6 +259,8 @@ in Python is `process.env.PW_SECRET_SITE_PASSWORD` in TypeScript.
   your site in a browser shown inside the page, add checks with a right
   click, and it writes the test for you.
 - **Your own editor**: write the files into the tests folder, then rescan.
+  `./testhub.sh manage new LOGIN-001 "Sign in"` (add `--ts` for
+  TypeScript) creates a working starter file for you.
 
 **Tips that pay off:**
 - Prefer selectors that survive a redesign: ids, roles, labels
@@ -321,6 +323,7 @@ test-hub/
 │   ├── freight/          Acme Freight, the demo site
 │   └── sample_tests/     the 32 sample tests + groups (copied into data/tests/ on first start)
 ├── docs/                 manual, test-writing guide, screenshots
+├── AGENTS.md             guidance for AI coding agents (CLAUDE.md points to it)
 │
 │   made on your machine (not in git):
 ├── .venv/  .browsers/  .pw-ts/     made by setup; delete them and re-run setup to reinstall
@@ -353,6 +356,9 @@ Start over from scratch with `./testhub.sh stop`, delete `data/`, then
   load testing, security observation, metrics, schedules, storage). It is
   written for installed lab machines, so read `testhub <command>` there as
   `./testhub.sh manage <command>` here.
+- **[AGENTS.md](AGENTS.md)**: guidance for AI coding agents (Codex, Claude
+  Code, OpenCode, Cursor) working in this repository: the commands, how to
+  write and verify a test, and the rules they must keep.
 - The **Help** page inside the hub is the tester's quick reference.
 
 **About this repository.** This is the laptop edition of the Test Hub from
