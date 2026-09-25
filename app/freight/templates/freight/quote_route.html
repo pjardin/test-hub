@@ -1,0 +1,23 @@
+{% extends "freight/base.html" %}
+{% block title %}Quote: route{% endblock %}
+{% block content %}
+<h1>Get a quote</h1>
+{% include "freight/_stepper.html" %}
+<form method="post" class="panel form" id="route-form" novalidate>{% csrf_token %}
+  <h2>Where is it going?</h2>
+  <div class="field{% if errors.origin %} has-error{% endif %}">
+    <label for="origin">From (city)</label>
+    <input id="origin" name="origin" value="{{ values.origin }}" list="origin-options" autocomplete="off" data-autocomplete>
+    <datalist id="origin-options"></datalist>
+    {% if errors.origin %}<p class="error" id="origin-error">{{ errors.origin }}</p>{% endif %}
+  </div>
+  <div class="field{% if errors.destination %} has-error{% endif %}">
+    <label for="destination">To (city)</label>
+    <input id="destination" name="destination" value="{{ values.destination }}" list="destination-options" autocomplete="off" data-autocomplete>
+    <datalist id="destination-options"></datalist>
+    {% if errors.destination %}<p class="error" id="destination-error">{{ errors.destination }}</p>{% endif %}
+  </div>
+  <p class="hint">Any city we serve: type a few letters and pick one, or write "Portland, Oregon" to be precise.</p>
+  <div class="actions"><button class="btn primary" type="submit" id="next-btn">Next: cargo</button></div>
+</form>
+{% endblock %}

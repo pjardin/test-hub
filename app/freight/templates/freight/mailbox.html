@@ -1,0 +1,33 @@
+{% extends "freight/base.html" %}
+{% block title %}Mailbox{% endblock %}
+{% block content %}
+<h1>Mailbox</h1>
+<p class="lead">Every email Acme Freight sends lands here instead of leaving the network &mdash; the test mail catcher a
+  real test environment runs. Kept in memory, the newest 200: a server restart empties it.</p>
+<form method="get" class="filters" id="mailbox-filter">
+  <label for="mailbox-to">Recipient</label>
+  <select id="mailbox-to" name="to" data-autosubmit>
+    <option value="">Everyone</option>
+    {% for a in addresses %}<option value="{{ a }}"{% if a == to %} selected{% endif %}>{{ a }}</option>{% endfor %}
+  </select>
+  <noscript><button class="btn" type="submit">Show</button></noscript>
+</form>
+<section class="panel" id="mailbox" data-poll-url="{% url 'freight:api_mailbox' %}?to={{ to|urlencode }}"
+         data-newest="{{ newest }}" aria-labelledby="mail-list-title">
+  <h2 id="mail-list-title" class="sr-only">Messages</h2>
+  {% if messages %}
+  <table class="data" id="mail-list">
+    <thead><tr><th>Received</th><th>To</th><th>Subject</th></tr></thead>
+    <tbody>{% for m in messages %}
+      <tr data-id="{{ m.id }}" data-to="{{ m.to }}">
+        <td>{{ m.received|date:"M j, H:i:s" }}</td>
+        <td>{{ m.to }}</td>
+        <td><a class="mail-subject" href="{% url 'freight:mail_message' m.id %}">{{ m.subject }}</a></td>
+      </tr>{% endfor %}</tbody>
+  </table>
+  {% else %}
+  <p class="empty" id="mailbox-empty">No mail{% if to %} for {{ to }}{% endif %} yet.</p>
+  {% endif %}
+  <p class="muted">This page checks for new mail every two seconds.</p>
+</section>
+{% endblock %}

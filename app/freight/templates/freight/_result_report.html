@@ -1,0 +1,27 @@
+<h2 id="report-title">{{ report.label }} at a glance</h2>
+<div class="kpis">
+  <div class="kpi"><span class="label">Shipments booked</span><strong id="report-shipments">{{ report.kpis.shipments }}</strong></div>
+  <div class="kpi"><span class="label">On time</span><strong id="report-ontime">{% if report.kpis.on_time_pct is not None %}{{ report.kpis.on_time_pct }}%{% else %}&ndash;{% endif %}</strong></div>
+  <div class="kpi"><span class="label">Revenue</span><strong id="report-revenue">{{ report_revenue }}</strong></div>
+  <div class="kpi"><span class="label">Avg. transit</span><strong id="report-transit">{% if report.kpis.avg_transit_days is not None %}{{ report.kpis.avg_transit_days }} days{% else %}&ndash;{% endif %}</strong></div>
+  <div class="kpi{% if report.kpis.exceptions %} warn{% endif %}"><span class="label">Exceptions</span><strong id="report-exceptions">{{ report.kpis.exceptions }}</strong></div>
+</div>
+<div class="charts">
+  <figure class="chart wide"><figcaption>Shipments per day</figcaption><div class="chart-box"><canvas id="report-daily"></canvas></div></figure>
+  <figure class="chart"><figcaption>By service</figcaption><div class="chart-box"><canvas id="report-services"></canvas></div></figure>
+</div>
+{{ report_charts|json_script:"report-charts" }}
+<div class="two-col">
+  <section class="panel"><h3>Top lanes by revenue</h3>
+    <table class="data" id="report-lanes"><thead><tr><th>Lane</th><th class="num">Shipments</th><th class="num">Revenue</th></tr></thead>
+      <tbody>{% for r in fmt_rows.lanes %}<tr><td>{{ r.lane }}</td><td class="num">{{ r.shipments }}</td><td class="num">{{ r.revenue }}</td></tr>{% endfor %}</tbody></table>
+  </section>
+  <section class="panel"><h3>Top customers by revenue</h3>
+    <table class="data" id="report-customers"><thead><tr><th>Customer</th><th class="num">Shipments</th><th class="num">Revenue</th></tr></thead>
+      <tbody>{% for r in fmt_rows.customers %}<tr><td>{{ r.customer }}</td><td class="num">{{ r.shipments }}</td><td class="num">{{ r.revenue }}</td></tr>{% endfor %}</tbody></table>
+  </section>
+</div>
+<section class="panel"><h3>By service</h3>
+  <table class="data" id="report-services-table"><thead><tr><th>Service</th><th class="num">Shipments</th><th class="num">Weight (kg)</th><th class="num">Revenue</th></tr></thead>
+    <tbody>{% for r in fmt_rows.services %}<tr><td>{{ r.service|capfirst }}</td><td class="num">{{ r.shipments }}</td><td class="num">{{ r.kg|floatformat:"1g" }}</td><td class="num">{{ r.revenue }}</td></tr>{% endfor %}</tbody></table>
+</section>

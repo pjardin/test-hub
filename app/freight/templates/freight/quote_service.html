@@ -1,0 +1,26 @@
+{% extends "freight/base.html" %}
+{% block title %}Quote: service{% endblock %}
+{% block content %}
+<h1>Get a quote</h1>
+{% include "freight/_stepper.html" %}
+<form method="post" class="panel form" id="service-form">{% csrf_token %}
+  <h2>How fast?</h2>
+  <p class="muted">{{ q.origin }} &rarr; {{ q.destination }} &middot; {{ q.weight_kg }} kg{% if q.hazardous %} &middot; hazardous{% endif %}</p>
+  {% if error %}<p class="error" id="service-error" role="alert">{{ error }}</p>{% endif %}
+  <div class="service-options" role="radiogroup" aria-label="Service">
+    {% for o in options %}
+    <label class="option{% if o.disabled %} disabled{% endif %}" data-service="{{ o.key }}">
+      <input type="radio" name="service" value="{{ o.key }}"{% if o.key == chosen and not o.disabled %} checked{% endif %}{% if o.disabled %} disabled{% endif %}>
+      <span class="name">{{ o.label }}</span>
+      <span class="days">{{ o.days }} &middot; arrives by {{ o.eta|date:"D j M" }}</span>
+      <span class="price" data-price="{{ o.key }}">{{ o.total }}</span>
+      {% if o.disabled %}<span class="why">Not available for hazardous goods</span>{% endif %}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="actions">
+    <a class="btn link" href="{% url 'freight:quote_cargo' %}">Back</a>
+    <button class="btn primary" type="submit" id="next-btn">Next: review</button>
+  </div>
+</form>
+{% endblock %}

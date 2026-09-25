@@ -1,0 +1,37 @@
+{% extends "freight/base.html" %}
+{% block title %}Quote: customs{% endblock %}
+{% block content %}
+<h1>Get a quote</h1>
+{% include "freight/_stepper.html" %}
+<form method="post" class="panel form" id="customs-form" novalidate>{% csrf_token %}
+  <h2>Customs details</h2>
+  <p class="muted">{{ q.origin }} &rarr; {{ q.destination }} crosses a border, so we estimate the import duty up front.</p>
+  <div class="field{% if errors.category %} has-error{% endif %}">
+    <label for="category">What is being shipped?</label>
+    <select id="category" name="category">
+      {% for c in categories %}<option value="{{ c }}"{% if c == values.category %} selected{% endif %}>{{ c|capfirst }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="row">
+    <div class="field{% if errors.declared_value %} has-error{% endif %}">
+      <label for="declared_value">Declared value (USD)</label>
+      <input id="declared_value" name="declared_value" type="number" step="0.01" min="0.01" value="{{ values.declared_value }}">
+      {% if errors.declared_value %}<p class="error" id="declared-error">{{ errors.declared_value }}</p>{% endif %}
+    </div>
+    <div class="field{% if errors.hs_code %} has-error{% endif %}">
+      <label for="hs_code">HS code (optional)</label>
+      <input id="hs_code" name="hs_code" value="{{ values.hs_code }}" placeholder="8471.30">
+      {% if errors.hs_code %}<p class="error">{{ errors.hs_code }}</p>{% endif %}
+    </div>
+  </div>
+  <fieldset class="field">
+    <legend>Who pays the import duty?</legend>
+    <label class="radio"><input type="radio" name="incoterm" value="DAP"{% if values.incoterm == "DAP" %} checked{% endif %}> The receiver, on arrival (DAP)</label>
+    <label class="radio"><input type="radio" name="incoterm" value="DDP"{% if values.incoterm == "DDP" %} checked{% endif %}> We pay it and bill you (DDP)</label>
+  </fieldset>
+  <div class="actions">
+    <a class="btn link" href="{% url 'freight:quote_cargo' %}">Back</a>
+    <button class="btn primary" type="submit" id="next-btn">Next: service</button>
+  </div>
+</form>
+{% endblock %}

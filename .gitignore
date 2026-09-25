@@ -1,0 +1,17 @@
+# Made by ./testhub.sh setup (re-creatable, large)
+.venv/
+.browsers/
+.pw-ts/
+
+# The hub's working state on THIS machine: your tests, run results, the
+# database, credentials. Keep your tests in their own repo (see README).
+data/
+config.json
+.run/
+
+__pycache__/
+*.pyc
+.DS_Store
+
+# Other data folders you point config.json at (paths.data_dir)
+data-*/

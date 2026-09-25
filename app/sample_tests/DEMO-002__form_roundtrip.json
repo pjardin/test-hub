@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-002",
+  "name": "Form round-trip",
+  "description": "Fill the demo form, submit it, and verify the echoed values.",
+  "tags": ["smoke", "forms", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

@@ -1,0 +1,97 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% block title %}Dashboard — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Dashboard</h1>
+  <div class="spacer"></div>
+  <button class="btn" data-rescan title="Re-read the tests folder and update the database">&#8635; Rescan tests folder</button>
+  <a class="btn primary" href="{% url 'test_new' %}">+ New test</a>
+</div>
+
+<div class="tiles" data-live="dash-tiles">
+  <div class="tile"><div class="label">Tests</div><div class="value">{{ overview.tests }}</div></div>
+  <div class="tile"><div class="label">Runs (7d)</div><div class="value">{{ overview.runs }}</div></div>
+  <div class="tile"><div class="label">Pass rate (7d)</div>
+    <div class="value">{% if overview.pass_rate is not None %}{{ overview.pass_rate|floatformat:0 }}<small>%</small>{% else %}—{% endif %}</div></div>
+  <div class="tile"><div class="label">Avg duration (7d)</div>
+    <div class="value">{% if overview.avg_duration is not None %}{{ overview.avg_duration|duration }}{% else %}—{% endif %}</div></div>
+  <div class="tile"><div class="label">Failing now</div><div class="value">{{ failing|length }}</div>
+    <div class="hint">tests whose last run failed</div></div>
+</div>
+
+<div data-live="dash-new-failures">
+{% if new_failures %}
+<div class="card" style="border-left:4px solid var(--critical)">
+  <h2>&#9888; Started failing recently <span class="sub">fresh regressions — worth a look now</span></h2>
+  <table class="data">
+    <thead><tr><th>Test</th><th class="num">fails in a row</th><th>since</th><th></th></tr></thead>
+    <tbody>
+    {% for f in new_failures %}
+      <tr><td><a href="{% url 'test_detail' f.test_id %}"><strong>{{ f.test_id }}</strong></a> {{ f.name }}</td>
+          <td class="num">{{ f.streak }}</td>
+          <td>{{ f.since|date:"M j H:i" }}</td>
+          <td><a class="btn small" href="{% url 'run_detail' f.last_run_id %}">see the failure</a></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+</div>
+
+<div class="card">
+  <h2>Running now <span class="sub">updates every 2s &middot; est. remaining comes from that test's own history</span></h2>
+  <div id="running-now"><div class="empty">Loading…</div></div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>Recent batches <span class="sub">groups, selections and schedules</span></h2>
+    <div id="recent-batches-live">
+      {% for b in recent_batches %}
+      <div class="run-row">
+        <div class="grow">
+          <a href="{% url 'batch_detail' b.pk %}"><strong>{{ b.label|default:b.pk }}</strong></a>
+          <div class="meta">{{ b.trigger }} &middot; {{ b.created_at|date:"D H:i" }}</div>
+        </div>
+      </div>
+      {% empty %}<div class="empty">No batches yet.</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="card" data-live="dash-days">
+    <h2>Runs per day <span class="sub">last 14 days</span></h2>
+    {{ chart_days|json_script:"data-days" }}
+    <div class="chart-box short"><canvas data-chart="days" data-src="data-days"></canvas></div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card" data-live="dash-failing">
+    <h2>Failing now</h2>
+    {% if failing %}
+    <table class="data"><thead><tr><th>Test</th><th class="num">consecutive fails</th></tr></thead>
+      <tbody>
+      {% for f in failing %}
+      <tr><td><a href="{% url 'test_detail' f.test_id %}">{{ f.test_id }}</a> {{ f.name }}</td>
+          <td class="num">{{ f.streak }}</td></tr>
+      {% endfor %}
+      </tbody></table>
+    {% else %}<div class="empty">Nothing is failing. &#127881;</div>{% endif %}
+  </div>
+
+  <div class="card" data-live="dash-next">
+    <h2>Next scheduled runs</h2>
+    {% if schedules_next %}
+    <table class="data"><thead><tr><th>What</th><th>When</th></tr></thead><tbody>
+      {% for row in schedules_next %}
+      <tr><td>{{ row.schedule.target_label }}</td>
+          <td>{{ row.due|date:"D M j, H:i" }}</td></tr>
+      {% endfor %}
+    </tbody></table>
+    {% else %}<div class="empty">No enabled schedules. <a href="{% url 'schedules_list' %}">Add one</a>.</div>{% endif %}
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "freight/base.html" %}
+{% block title %}Quote: cargo{% endblock %}
+{% block content %}
+<h1>Get a quote</h1>
+{% include "freight/_stepper.html" %}
+<form method="post" class="panel form" id="cargo-form" novalidate>{% csrf_token %}
+  <h2>What are you shipping?</h2>
+  <p class="muted">{{ q.origin }} &rarr; {{ q.destination }}</p>
+  <div class="row">
+    <div class="field{% if errors.weight_kg %} has-error{% endif %}">
+      <label for="weight_kg">Total weight (kg)</label>
+      <input id="weight_kg" name="weight_kg" type="number" step="0.1" min="0.1" value="{{ values.weight_kg }}">
+      {% if errors.weight_kg %}<p class="error" id="weight-error">{{ errors.weight_kg }}</p>{% endif %}
+    </div>
+    <div class="field{% if errors.pieces %} has-error{% endif %}">
+      <label for="pieces">Pieces</label>
+      <input id="pieces" name="pieces" type="number" min="1" value="{{ values.pieces }}">
+      {% if errors.pieces %}<p class="error">{{ errors.pieces }}</p>{% endif %}
+    </div>
+  </div>
+  <fieldset class="field{% if errors.dims %} has-error{% endif %}">
+    <legend>Largest piece (cm) &mdash; optional</legend>
+    <div class="row dims">
+      <label>Length <input id="length_cm" name="length_cm" type="number" min="1" value="{{ values.length_cm }}"></label>
+      <label>Width <input id="width_cm" name="width_cm" type="number" min="1" value="{{ values.width_cm }}"></label>
+      <label>Height <input id="height_cm" name="height_cm" type="number" min="1" value="{{ values.height_cm }}"></label>
+    </div>
+    {% if errors.dims %}<p class="error">{{ errors.dims }}</p>{% endif %}
+    <p class="hint">Bulky and light? You pay for the space: volumetric weight is L&times;W&times;H / 5000.</p>
+  </fieldset>
+  <div class="field check">
+    <label><input id="hazardous" name="hazardous" type="checkbox" value="1"{% if values.hazardous %} checked{% endif %}> Contains hazardous goods (batteries, chemicals, aerosols)</label>
+  </div>
+  <div class="field{% if errors.description %} has-error{% endif %}">
+    <label for="description">Description (optional)</label>
+    <input id="description" name="description" value="{{ values.description }}" maxlength="200">
+  </div>
+  <div class="actions">
+    <a class="btn link" href="{% url 'freight:quote_route' %}">Back</a>
+    <button class="btn primary" type="submit" id="next-btn">Next</button>
+  </div>
+</form>
+{% endblock %}

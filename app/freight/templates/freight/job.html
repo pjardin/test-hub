@@ -1,0 +1,48 @@
+{% extends "freight/ops_base.html" %}
+{% load static %}
+{% block title %}{{ job.title }}{% endblock %}
+{% block ops %}
+<div class="job" id="job" data-state="{{ job.state }}" data-kind="{{ job.kind }}"
+     data-status-url="{% url 'freight:api_job' job.id %}"
+     data-cancel-url="{% url 'freight:api_job_cancel' job.id %}">
+  <h1 id="job-title">{{ job.title }}</h1>
+  <p class="muted">Job <code>{{ job.id }}</code> &middot; release {{ job.version }} &middot;
+    <span class="badge state-{{ job.state }}" id="job-state">{{ job.state }}</span> &middot;
+    <span id="job-elapsed">{{ snap.elapsed }}</span>s</p>
+
+  {% if not job.is_finished %}
+    <div class="progress" id="job-progress" role="progressbar" aria-labelledby="job-stage"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ snap.percent }}">
+      <div class="bar" style="width: {{ snap.percent }}%"></div>
+      <span class="pct" id="job-percent">{{ snap.percent }}%</span>
+    </div>
+    <p class="stage" id="job-stage">{{ snap.stage }}</p>
+    <p><button class="btn" type="button" id="cancel-job">Cancel</button></p>
+    <div class="live-grid">
+      <figure class="chart"><figcaption>{% if job.kind == "optimize" %}Total distance (km): current plan and best so far{% elif job.kind == "manifest" %}Rows checked: priced vs. with problems{% else %}Progress (%){% endif %}</figcaption>
+        <div class="chart-box"><canvas id="job-chart"></canvas></div></figure>
+      <ol class="job-log" id="job-log" aria-label="Job log">
+        {% for line in snap.log %}<li data-seq="{{ line.seq }}"><time>{{ line.t }}s</time> {{ line.text }}</li>{% endfor %}
+      </ol>
+    </div>
+  {% elif job.state == "done" %}
+    <section class="job-result" id="job-result" data-kind="{{ job.kind }}">
+      {% if job.kind == "optimize" %}{% include "freight/_result_optimize.html" %}
+      {% elif job.kind == "manifest" %}{% include "freight/_result_manifest.html" %}
+      {% else %}{% include "freight/_result_report.html" %}{% endif %}
+      <p class="result-actions">
+        <a class="btn primary" id="download-result" href="{% url 'freight:job_download' job.id %}" download>Download CSV</a>
+        {% if job.kind == "report" %}<button class="btn" type="button" data-print>Print</button>{% endif %}
+      </p>
+    </section>
+    <details class="final-log"><summary>Job log ({{ snap.log|length }} lines)</summary>
+      <ol class="job-log">{% for line in snap.log %}<li><time>{{ line.t }}s</time> {{ line.text }}</li>{% endfor %}</ol>
+    </details>
+  {% else %}
+    <div class="alert alert-error" id="job-failed" role="alert">This job was {{ job.state }}{% if job.error %}: {{ job.error }}{% endif %}.</div>
+    <ol class="job-log">{% for line in snap.log %}<li><time>{{ line.t }}s</time> {{ line.text }}</li>{% endfor %}</ol>
+  {% endif %}
+  {{ snap.series|json_script:"job-series" }}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'core/vendor/chart.umd.min.js' %}" defer></script>{% endblock %}

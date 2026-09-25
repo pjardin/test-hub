@@ -1,0 +1,46 @@
+{% extends "freight/ops_base.html" %}
+{% block title %}Live fleet{% endblock %}
+{% block ops %}
+<div class="fleet-head">
+  <h1>Live fleet</h1>
+  <form method="get" class="inline" id="fleet-region-form">
+    <label class="sr-only" for="fleet-region">Region</label>
+    <select id="fleet-region" name="region" data-autosubmit>
+      {% for key, label in regions %}<option value="{{ key }}"{% if key == region %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <button class="btn" type="submit">Show</button>
+  </form>
+</div>
+<p class="muted">Demo time runs fast &mdash; a 150&nbsp;km leg takes about 25 seconds. Positions refresh every two seconds.</p>
+<div class="fleet" id="fleet" data-url="{% url 'freight:api_fleet' region %}">
+  <figure class="route-map region-map">
+    <svg viewBox="0 0 {{ map.w }} {{ map.h }}" class="map" role="img" aria-label="Live truck positions">
+      <image href="{{ map.basemap }}" x="0" y="0" width="{{ map.w }}" height="{{ map.h }}"/>
+      {% for r in routes %}<polyline class="fleet-route" data-truck="{{ r.id }}" points="{{ r.points }}" style="stroke: {{ r.color }}"/>
+        {% for s in r.stops %}<circle class="fleet-stop" cx="{{ s.x }}" cy="{{ s.y }}" r="3.5"><title>{{ s.name }}</title></circle>{% endfor %}{% endfor %}
+      {% for t in snap.trucks %}<g class="truck" data-truck="{{ t.id }}" style="transform: translate({{ t.x }}px, {{ t.y }}px)">
+        <circle r="9" style="fill: {{ t.color }}"/><text y="-13">{{ t.id }}</text></g>{% endfor %}
+    </svg>
+  </figure>
+  <section class="panel fleet-side">
+    <table class="data" id="fleet-table">
+      <thead><tr><th>Truck</th><th>Driver</th><th>Status</th><th>Next stop</th><th class="num">ETA</th><th class="num">Load</th></tr></thead>
+      <tbody>
+        {% for t in snap.trucks %}
+        <tr data-truck="{{ t.id }}" data-status="{{ t.status }}" data-next="{{ t.next_stop }}"
+            data-next-arrival="{{ t.next_arrival }}" data-eta="{{ t.eta_s }}">
+          <td><span class="swatch" style="background: {{ t.color }}"></span>{{ t.id }}</td>
+          <td>{{ t.driver }}</td><td class="st">{{ t.status }}</td><td class="nx">{{ t.next_stop }}</td>
+          <td class="num eta">{{ t.eta_s }}s</td><td class="num">{{ t.load }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <h2>Arrivals, last 10 minutes</h2>
+    <ol class="fleet-events" id="fleet-events">
+      {% for e in snap.events %}<li data-arrival="{{ e.id }}" data-truck="{{ e.truck }}" data-stop="{{ e.stop }}"><time>{{ e.clock }}</time> {{ e.text }} <span class="punctual{% if e.punctual != 'on time' %} late{% endif %}">({{ e.punctual }})</span></li>
+      {% empty %}<li class="muted">No arrivals yet.</li>{% endfor %}
+    </ol>
+  </section>
+</div>
+{% endblock %}

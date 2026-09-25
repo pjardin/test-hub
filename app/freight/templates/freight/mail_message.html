@@ -1,0 +1,14 @@
+{% extends "freight/base.html" %}
+{% block title %}{{ msg.subject }}{% endblock %}
+{% block content %}
+<p><a href="{% url 'freight:mailbox' %}?to={{ msg.to|urlencode }}">&larr; Mailbox</a></p>
+<article class="panel mail" id="mail" data-id="{{ msg.id }}">
+  <h1 id="mail-subject">{{ msg.subject }}</h1>
+  <dl class="facts">
+    <dt>From</dt><dd>{{ sender }}</dd>
+    <dt>To</dt><dd id="mail-to">{{ msg.to }}</dd>
+    <dt>Received</dt><dd>{{ received|date:"M j, Y H:i:s" }}</dd>
+  </dl>
+  <div class="mail-body" id="mail-body">{{ msg.text|urlize|linebreaks }}</div>
+</article>
+{% endblock %}

@@ -1,0 +1,11 @@
+{
+  "id": "DEMO-012",
+  "name": "Freight: staff sign-in security checks",
+  "description": "Signs in to the staff portal and verifies session rotation (no session fixation), that the dashboard refuses a browser with no session, and that signing out really ends the session.",
+  "tags": ["freight", "security", "auth", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "video": "off",
+  "schedules": []
+}

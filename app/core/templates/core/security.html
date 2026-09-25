@@ -1,0 +1,99 @@
+{% extends "core/base.html" %}
+{% block title %}Security — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head"><h1>Security posture</h1><div class="spacer"></div></div>
+<div data-live="security">
+
+<div class="card">
+  <h2>What this is <span class="sub">read this before acting on anything below</span></h2>
+  <p>Every test run also <strong>watches</strong> how the application is
+     configured: the response headers it sends, the flags on its cookies, and
+     whether the page tries to fetch anything from another host. It costs
+     nothing extra — the browser is already there.</p>
+  <p class="help">
+     <strong>This is not a penetration test and not a vulnerability scanner.</strong>
+     Nothing here attacks the application, tries payloads or knows about CVEs.
+     It reports what the browser saw. An empty list means
+     <em>“no misconfiguration was visible from here”</em> — never
+     <em>“this application is secure”</em>.
+  </p>
+  {% if not checks_on %}
+    <div class="msg error">Security observation is switched off
+      (<code>runner.security_checks</code> in config.json), so this page shows
+      whatever was collected before it was disabled.</div>
+  {% endif %}
+</div>
+
+<div class="tiles">
+  <div class="tile"><div class="label">High</div>
+    <div class="value">{{ posture.counts.high }}</div>
+    <div class="hint">worth fixing first</div></div>
+  <div class="tile"><div class="label">Medium</div>
+    <div class="value">{{ posture.counts.medium }}</div></div>
+  <div class="tile"><div class="label">Low</div>
+    <div class="value">{{ posture.counts.low }}</div></div>
+  <div class="tile"><div class="label">Informational</div>
+    <div class="value">{{ posture.counts.info }}</div>
+    <div class="hint">checked, nothing to do</div></div>
+  <div class="tile"><div class="label">Tests reporting</div>
+    <div class="value">{{ posture.tests_reporting }}</div>
+    <div class="hint">newest run of each</div></div>
+</div>
+
+{% if posture.external_hosts %}
+<div class="card">
+  <h2>Requests leaving for other hosts
+      <span class="sub">the one that matters most on an air-gapped network</span></h2>
+  <p>The application asked the browser to fetch things from hosts other than
+     the site under test. On an isolated network these cannot succeed — so the
+     page is either broken or sitting through a timeout — and each one is a
+     route by which data could leave.</p>
+  <table class="data">
+    <thead><tr><th>Host</th><th class="num">Requests seen</th></tr></thead>
+    <tbody>
+      {% for host, n in posture.external_hosts %}
+        <tr><td><code>{{ host }}</code></td><td class="num">{{ n }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>What was found <span class="sub">grouped by problem, not repeated per test</span></h2>
+  {% if posture.issues %}
+    <div class="table-scroll">
+    <table class="data">
+      <thead><tr><th>Severity</th><th>Finding</th><th class="num">Tests</th><th>What to do</th></tr></thead>
+      <tbody>
+      {% for issue in posture.issues %}
+        <tr>
+          <td><span class="badge {% if issue.severity == 'high' %}failed{% elif issue.severity == 'medium' %}timeout{% elif issue.severity == 'low' %}running{% else %}passed{% endif %}">{{ issue.severity }}</span></td>
+          <td><strong>{{ issue.title }}</strong>
+              <div class="help">{{ issue.detail }}</div>
+              <div class="help">seen by: {{ issue.tests|join:", "|truncatechars:80 }}
+                {% if issue.run_id %}· <a href="{% url 'run_detail' issue.run_id %}">example run</a>{% endif %}</div></td>
+          <td class="num">{{ issue.test_count }}</td>
+          <td class="help">{{ issue.fix }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="empty">
+      {% if posture.tests_reporting %}
+        Nothing was flagged in the newest run of each test. That means no
+        misconfiguration was visible to the browser — not that the application
+        has been security tested.
+      {% else %}
+        No runs have collected security observations yet. Run any test and
+        come back.
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+</div>
+{% endblock %}

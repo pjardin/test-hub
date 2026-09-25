@@ -1,0 +1,26 @@
+# Python packages for the Test Hub -- installed by `./testhub.sh setup` into .venv/
+#
+# Python 3.9, 3.10, 3.11 or 3.12. (3.9 is what the air-gapped lab machines
+# run, so the hub's code stays 3.9-compatible; 3.13+ is not supported by
+# Django 4.2 and these numpy/scipy versions.)
+#
+# The versions are the ones the lab machines run, and every one of them has
+# prebuilt wheels for macOS (Intel and Apple Silicon) and Linux (x86_64 and
+# arm64) on Python 3.9-3.12 -- nothing compiles during setup.
+
+# --- the Test Hub itself ------------------------------------------------------
+Django==4.2.30        # the web app (4.2 LTS: the last Django that supports Python 3.9)
+waitress==3.0.2       # the web server that runs it (pure Python)
+tzdata==2026.3        # time zone data, for machines without the system's
+
+# --- browser automation --------------------------------------------------------
+playwright==1.60.0    # Playwright for Python; its Chromium is downloaded by setup
+
+# --- used by the sample tests' visual comparisons (DEMO-005, DEMO-017) ----------
+numpy==2.0.2
+opencv-python-headless==5.0.0.93
+scikit-image==0.24.0
+
+# --- optional: keep run artifacts in Amazon S3 instead of on disk ----------------
+# (Settings -> Storage; imported only when that is switched on)
+boto3==1.42.97

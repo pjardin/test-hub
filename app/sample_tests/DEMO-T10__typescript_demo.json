@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-T10",
+  "name": "TypeScript demo (node engine)",
+  "description": "Runs under the TS engine's @playwright/test while the Python hub provides queue, history, schedules and charts. Requires the TS engine bundle at /opt/pw-ts.",
+  "tags": ["demo", "typescript"],
+  "version": "",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

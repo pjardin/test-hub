@@ -1,0 +1,71 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% block title %}Batch {{ batch.pk }} — Test Hub{% endblock %}
+{% block content %}
+<div data-live="batch">
+
+<div class="page-head">
+  <h1>{% if batch.trigger == "schedule" %}Scheduled run: {% if batch.group %}{{ batch.group.name }}{% elif batch.schedule %}{{ batch.schedule.target_label }}{% else %}{{ batch.label }}{% endif %}{% elif batch.group %}Group run: {{ batch.group.name }}{% else %}Batch #{{ batch.pk }}{% endif %}
+    <span class="help">batch #{{ batch.pk }}{% if show_label %} · {{ batch.label }}{% endif %}</span></h1>
+  <div class="spacer"></div>
+  {% if active %}<button class="btn danger" data-kill-batch="{{ batch.pk }}">Kill remaining runs</button>{% endif %}
+</div>
+
+<p class="help" id="batch-source">
+  started by: <strong>{{ summary.source }}</strong>
+  {% if batch.schedule %} · schedule <a href="{% url 'schedules_list' %}#schedule-history">{{ batch.schedule.days_display }} {{ batch.schedule.time_of_day|time:"H:i" }}</a>{% endif %}
+  {% if batch.group %} · group <a href="{% url 'group_detail' batch.group.pk %}">{{ batch.group.name }}</a>{% endif %}
+  · created {{ batch.created_at|date:"Y-m-d H:i:s" }}
+  {% if active %} · est. total remaining:
+    {% if eta_total is not None %}{{ eta_total|duration }}{% else %}unknown — not every test has history yet{% endif %}
+  {% endif %}
+  {% if older or newer %}<br>
+    {% if older %}<a href="{% url 'batch_detail' older.pk %}" id="batch-older">&larr; previous run ({{ older.created_at|date:"M j H:i" }})</a>{% endif %}
+    {% if older and newer %} · {% endif %}
+    {% if newer %}<a href="{% url 'batch_detail' newer.pk %}" id="batch-newer">next run ({{ newer.created_at|date:"M j H:i" }}) &rarr;</a>{% endif %}
+  {% endif %}
+</p>
+
+<div class="tiles" id="batch-stats">
+  <div class="tile"><div class="label">Result</div>
+    <div class="value">{% if summary.active %}running{% else %}{{ summary.passed }}<small> of {{ summary.total }} passed</small>{% endif %}</div>
+    <div class="hint">{% with h=summary %}{% include "core/_batch_result.html" %}{% endwith %}</div></div>
+  <div class="tile"><div class="label">Pass rate</div>
+    <div class="value">{% if summary.rate is not None %}{{ summary.rate }}%{% else %}—{% endif %}</div></div>
+  <div class="tile"><div class="label">Took</div>
+    <div class="value">{% if summary.wall is not None %}{{ summary.wall|duration }}{% else %}—{% endif %}</div>
+    <div class="hint">first start to last finish</div></div>
+  <div class="tile"><div class="label">Test time</div>
+    <div class="value">{{ summary.test_time|duration }}</div>
+    <div class="hint">all runs added up</div></div>
+  <div class="tile"><div class="label">Website release</div>
+    <div class="value">{{ summary.release|default:"—" }}</div></div>
+  <div class="tile"><div class="label">Finished</div>
+    <div class="value"><small>{% if summary.finished %}{{ summary.finished|date:"M j, H:i:s" }}{% else %}not yet{% endif %}</small></div></div>
+</div>
+
+<div class="card table-scroll">
+  <table class="data" id="batch-runs">
+    <thead><tr><th>Run</th><th>Test</th><th>Status</th><th class="num">Duration</th><th class="num">Usual</th>
+      <th>vs usual</th><th>What went wrong</th><th></th></tr></thead>
+    <tbody>
+    {% for row in rows %}{% with r=row.r %}
+      <tr>
+        <td><a href="{% url 'run_detail' r.pk %}">#{{ r.pk }}</a></td>
+        <td><a href="{% url 'test_detail' r.test.test_id %}">{{ r.test.test_id }}</a> {{ r.test.display_name }}</td>
+        <td><span class="badge {{ r.status }}">{{ r.status }}</span></td>
+        <td class="num">{% if r.duration_seconds is not None %}{{ r.duration_seconds|duration }}{% else %}—{% endif %}</td>
+        <td class="num">{% if row.usual is not None %}{{ row.usual|duration }}{% else %}<span class="help">—</span>{% endif %}</td>
+        <td>{% if row.versus %}<span class="versus {{ row.versus_class }}">{{ row.versus }}</span>{% endif %}</td>
+        <td class="why">{% if row.why %}<a href="{% url 'run_detail' r.pk %}">{{ row.why }}</a>{% endif %}</td>
+        <td>{% if r.is_active %}<button class="btn small danger" data-kill-run="{{ r.pk }}">Kill</button>{% endif %}</td>
+      </tr>
+    {% endwith %}{% endfor %}
+    </tbody>
+  </table>
+  <p class="help">Usual = the median of the test's earlier ordinary runs (load-test iterations never count), shown once
+    it has at least three. A run is flagged when it is 25% slower or 20% faster than that.</p>
+</div>
+
+</div>
+{% endblock %}

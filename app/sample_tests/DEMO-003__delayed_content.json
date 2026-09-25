@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-003",
+  "name": "Delayed content appears",
+  "description": "Click a control and wait for content that renders asynchronously.",
+  "tags": ["smoke", "async", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

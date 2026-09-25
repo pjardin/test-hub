@@ -1,0 +1,175 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% load static %}
+{% block title %}{{ test.test_id }} — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>{{ test.test_id }}{% if test.test_type == "ts" %} <span class="pill" title="TypeScript: runs under the TS engine's @playwright/test at /opt/pw-ts. Security observation does not apply to TS runs.">TS</span>{% endif %} <span class="help">{{ test.display_name }}</span></h1>
+  {% if test.archived %}<span class="tag">archived</span>{% endif %}
+  {% if not test.enabled %}<span class="tag">disabled</span>{% endif %}
+  <div class="spacer"></div>
+  {% if not test.archived %}
+  <button class="btn primary" data-run-test="{{ test.test_id }}" data-go-batch>Run now</button>
+  <a class="btn" href="{% url 'test_edit' test.test_id %}">Edit</a>
+  <a class="btn" href="{% url 'load_new' %}?test={{ test.test_id }}"
+     title="Repeat this test with several browsers at once and see what slows down">Load test</a>
+  <a class="btn" href="{% url 'test_new' %}?copy={{ test.test_id }}"
+     title="Start a new test with this one's code and metadata prefilled">Duplicate</a>
+  <button class="btn danger" data-purge-test="{{ test.test_id }}"
+          title="Delete this test's stored videos/screenshots/traces (keeps the charts)">Delete files</button>
+  {% endif %}
+</div>
+
+{% if test.description %}<p>{{ test.description }}</p>{% endif %}
+<p>
+  {% for t in test.tags %}<a class="tag" href="{% url 'tests_list' %}?tag={{ t|urlencode }}">{{ t }}</a>{% endfor %}
+  {% if test.version_tag %}<span class="tag">version: {{ test.version_tag }}</span>{% endif %}
+  <span class="tag mono">{{ test.file_path }}</span>
+  {% for g in test.groups.all %}<a class="tag" href="{% url 'group_detail' g.pk %}">group: {{ g.name }}</a>{% endfor %}
+  {% for s in test.schedules.all %}<a class="tag" href="{% url 'schedules_list' %}"
+     title="managed on the Schedules page">&#128337; {{ s.days_display }} {{ s.time_of_day|time:"H:i" }}{% if not s.enabled %} (paused){% endif %}</a>{% endfor %}
+</p>
+
+<div data-live="test">
+<div class="tiles">
+  <div class="tile"><div class="label">Runs</div><div class="value">{{ stats.total_runs }}</div></div>
+  <div class="tile"><div class="label">Pass rate</div>
+    <div class="value">{% if stats.pass_rate is not None %}{{ stats.pass_rate|floatformat:0 }}<small>%</small>{% else %}—{% endif %}</div>
+    <div class="hint">{{ stats.passed }} passed / {{ stats.failed }} failed</div></div>
+  <div class="tile"><div class="label">Avg duration</div>
+    <div class="value">{% if stats.avg_duration is not None %}{{ stats.avg_duration|duration }}{% else %}—{% endif %}</div>
+    <div class="hint">p95 {% if stats.p95_duration is not None %}{{ stats.p95_duration|duration }}{% else %}—{% endif %}</div></div>
+  <div class="tile"><div class="label">Estimate</div>
+    <div class="value">{% if stats.estimate is not None %}{{ stats.estimate|duration }}{% else %}null{% endif %}</div>
+    <div class="hint">avg of last 10 judged runs</div></div>
+  <div class="tile"><div class="label">Flakiness</div>
+    <div class="value">{% if stats.flakiness is not None %}{{ stats.flakiness|floatformat:2 }}{% else %}—{% endif %}</div>
+    <div class="hint">0 stable · 1 alternates</div></div>
+  <div class="tile"><div class="label">Current streak</div>
+    <div class="value">{{ stats.streak|default:"—" }}</div>
+    <div class="hint">{{ stats.streak_status|default:"" }}</div></div>
+</div>
+
+<div class="card">
+  <h2>Last {{ strip|length }} results <span class="sub">newest on the right — click a square to open that run</span></h2>
+  <div class="strip">
+    {% for r in strip %}<a class="{{ r.status }}" href="{% url 'run_detail' r.id %}"
+        title="{{ r.when }} — {{ r.status }}{% if r.duration %} in {{ r.duration|duration }}{% endif %} (v{{ r.version }})"></a>{% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Duration per run <span class="sub">point color = outcome; dashed = 7-run average; click a point to open the run</span></h2>
+  {{ chart_history|json_script:"data-history" }}
+  <div class="chart-box"><canvas data-chart="duration" data-src="data-history"></canvas></div>
+</div>
+
+{% if chart_timings.series %}
+<div class="card">
+  <h2>Step timing trends <span class="sub">the same step compared across the last
+    {{ chart_timings.labels|length }} runs — slowest steps first, one line each</span></h2>
+  {{ chart_timings|json_script:"data-timings" }}
+  <div class="chart-box"><canvas data-chart="timings" data-src="data-timings"></canvas></div>
+</div>
+{% endif %}
+
+{% if chart_histogram.counts %}
+<div class="grid-2">
+  <div class="card">
+    <h2>How long it takes <span class="sub">distribution of {{ stats.total_runs }} runs —
+      two humps mean two different behaviours hiding behind one average</span></h2>
+    {{ chart_histogram|json_script:"data-hist" }}
+    <div class="chart-box short"><canvas data-chart="histogram" data-src="data-hist"></canvas></div>
+    <p class="help">fastest {{ chart_histogram.min|duration }} · slowest {{ chart_histogram.max|duration }}</p>
+  </div>
+  <div class="card">
+    <h2>Why this test failed <span class="sub">grouped by message, last 90 days</span></h2>
+    {% if err_clusters %}
+    <table class="data">
+      <thead><tr><th class="num">times</th><th>message</th><th>last</th><th></th></tr></thead>
+      <tbody>
+      {% for c in err_clusters %}
+        <tr><td class="num">{{ c.count }}</td>
+            <td class="mono" style="font-size:11px">{{ c.sample|truncatechars:70 }}</td>
+            <td>{{ c.last|date:"M j" }}</td>
+            <td><a class="btn small" href="{% url 'run_detail' c.example_run %}">open</a></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="empty">No failures recorded. &#128077;</div>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <h2>Outcomes by target version</h2>
+    {{ chart_versions|json_script:"data-versions" }}
+    <div class="chart-box"><canvas data-chart="versions" data-src="data-versions"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>What this test does <span class="sub">plain language, derived from the code</span></h2>
+    <ol class="plain-steps">
+      {% for s in plain_steps %}
+        <li class="{{ s.kind }}">{{ s.text }}</li>
+      {% empty %}<div class="empty">No steps found.</div>{% endfor %}
+    </ol>
+    <details>
+      <summary class="help" style="cursor:pointer">Show the code</summary>
+      <pre class="log code-view"{% if test.test_type == "ts" %} data-mode="javascript"{% endif %}>{{ code }}</pre>
+    </details>
+  </div>
+</div>
+
+<div class="card">
+  <h2>All runs</h2>
+  <form class="filters" method="get">
+    <label class="field"><span>Status</span>
+      <select name="status" onchange="this.form.submit()">
+        <option value="">all</option>
+        {% for s in status_choices %}<option value="{{ s }}" {% if s == status_filter %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select></label>
+    <label class="field"><span>Version</span>
+      <select name="version" onchange="this.form.submit()">
+        <option value="">all</option>
+        {% for v in version_choices %}<option value="{{ v }}" {% if v == version_filter %}selected{% endif %}>{{ v }}</option>{% endfor %}
+      </select></label>
+  </form>
+  <div class="table-scroll">
+  <table class="data">
+    <thead><tr><th>Run</th><th>Status</th><th>Queued</th><th class="num">Duration</th>
+               <th>Version</th><th>Trigger</th><th>Batch</th></tr></thead>
+    <tbody>
+    {% for r in page %}
+      <tr>
+        <td><a href="{% url 'run_detail' r.pk %}">#{{ r.pk }}</a></td>
+        <td><span class="badge {{ r.status }}">{{ r.status }}</span></td>
+        <td>{{ r.queued_at|date:"Y-m-d H:i:s" }}</td>
+        <td class="num">{% if r.duration_seconds is not None %}{{ r.duration_seconds|duration }}{% else %}—{% endif %}</td>
+        <td>{{ r.target_version|default:"—" }}</td>
+        <td>{{ r.trigger }}</td>
+        <td>{% if r.batch %}<a href="{% url 'batch_detail' r.batch.pk %}">{{ r.batch.label|truncatechars:30 }}</a>{% else %}—{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="7"><div class="empty">No runs match.</div></td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if page.has_other_pages %}
+  <p>
+    {% if page.has_previous %}<a class="btn small" href="?page={{ page.previous_page_number }}&status={{ status_filter }}&version={{ version_filter }}">&larr; newer</a>{% endif %}
+    page {{ page.number }} / {{ page.paginator.num_pages }}
+    {% if page.has_next %}<a class="btn small" href="?page={{ page.next_page_number }}&status={{ status_filter }}&version={{ version_filter }}">older &rarr;</a>{% endif %}
+  </p>
+  {% endif %}
+</div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'core/vendor/codemirror/codemirror.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/python.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/javascript.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/runmode.min.js' %}"></script>
+<script src="{% static 'core/codeview.js' %}"></script>
+{% endblock %}

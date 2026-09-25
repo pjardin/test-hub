@@ -1,0 +1,29 @@
+{% extends "freight/base.html" %}
+{% block title %}Reset your password{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <h1>Reset your password</h1>
+  {% if ref %}
+  <div class="alert alert-ok" id="forgot-sent" role="status">
+    <p><strong>Check your email.</strong> If an account matches <strong>{{ login }}</strong>, we have sent it a link
+      to choose a new password. It can take a few seconds to arrive.</p>
+    <p>Request reference: <strong id="forgot-ref">{{ ref }}</strong></p>
+  </div>
+  <p class="muted">On this demo server every email lands in the <a id="open-mailbox" href="{% url 'freight:mailbox' %}">Mailbox</a>
+    instead of leaving the network.</p>
+  {% else %}
+  <p class="muted">Enter your username or email address and we&rsquo;ll send you a link to choose a new password.</p>
+  <form method="post" class="form" id="forgot-form" novalidate>{% csrf_token %}
+    <div class="field">
+      <label for="forgot-login">Username or email</label>
+      <input id="forgot-login" name="login" value="{{ login }}" autocomplete="username" autofocus>
+    </div>
+    {% if error %}<p class="error" id="forgot-error" role="alert">{{ error }}</p>{% endif %}
+    <div class="actions"><button class="btn primary" type="submit" id="forgot-btn">Send me a reset link</button></div>
+  </form>
+  <p class="muted">Try it with the account <code>driver</code>. The shared accounts <code>tester</code> and
+    <code>manager</code> keep their published password, so the sample tests keep working.</p>
+  {% endif %}
+  <p><a href="{% url 'freight:login' %}">&larr; Back to sign-in</a></p>
+</section>
+{% endblock %}

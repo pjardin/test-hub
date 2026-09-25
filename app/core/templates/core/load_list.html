@@ -1,0 +1,75 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% block title %}Load testing — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Load &amp; performance</h1>
+  <div class="spacer"></div>
+  <a class="btn primary" href="{% url 'load_new' %}">Plan a load test</a>
+</div>
+
+<p class="help" style="max-width:70ch">
+  Take a test you already have and run it over and over, several copies at a
+  time, for a fixed stretch of time. Every copy is a <strong>real browser</strong>
+  driving the real application, so what you get back is what a user would
+  actually feel — including <em>which step</em> slows down, not just that
+  something did.
+</p>
+
+<div class="card">
+  <h2>This machine <span class="sub">a virtual user is a real Chromium, so the ceiling is physical</span></h2>
+  <p>{{ capacity.why }}.
+     Comfortable starting point: <strong>{{ capacity.suggested }}</strong> at once;
+     hard ceiling on this box: <strong>{{ capacity.ceiling }}</strong>.</p>
+</div>
+
+<div class="card" data-live="load-runs">
+  <h2>Recent load runs</h2>
+  <div class="table-scroll">
+  <table class="data">
+    <thead><tr><th>#</th><th>Test</th><th>Status</th><th class="num">Users</th>
+               <th class="num">Window</th><th class="num">Passes</th>
+               <th class="num">p95</th><th class="num">vs baseline</th><th>Started</th></tr></thead>
+    <tbody>
+    {% for lr in runs %}
+      <tr>
+        <td><a href="{% url 'load_detail' lr.pk %}">#{{ lr.pk }}</a></td>
+        <td><a href="{% url 'test_detail' lr.test.test_id %}">{{ lr.test.test_id }}</a></td>
+        <td><span class="badge {% if lr.status == 'finished' %}passed{% elif lr.status == 'running' %}running{% else %}failed{% endif %}">{{ lr.status }}</span></td>
+        <td class="num">{{ lr.concurrency }}</td>
+        <td class="num">{{ lr.duration_seconds|duration }}</td>
+        <td class="num">{{ lr.summary.completed|default:"—" }}</td>
+        <td class="num">{% if lr.summary.p95 %}{{ lr.summary.p95 }}s{% else %}—{% endif %}</td>
+        <td class="num">{% if lr.summary.slowdown_x %}<strong>{{ lr.summary.slowdown_x }}×</strong>{% else %}—{% endif %}</td>
+        <td>{{ lr.started_at|date:"M j H:i" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="9"><div class="empty">No load runs yet — plan one above.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% if plans %}
+<div class="card">
+  <h2>Saved plans <span class="sub">re-run the same shape of load after a change</span></h2>
+  <table class="data">
+    <thead><tr><th>Plan</th><th>Test</th><th class="num">Users</th><th class="num">Window</th><th></th></tr></thead>
+    <tbody>
+    {% for plan in plans %}
+      <tr>
+        <td><strong>{{ plan.name }}</strong><div class="help">{{ plan.description|truncatechars:70 }}</div></td>
+        <td><a href="{% url 'test_detail' plan.test.test_id %}">{{ plan.test.test_id }}</a></td>
+        <td class="num">{{ plan.concurrency }}</td>
+        <td class="num">{{ plan.duration_seconds|duration }}</td>
+        <td><a class="btn small primary" href="{% url 'load_new' %}?test={{ plan.test.test_id }}&duration_seconds={{ plan.duration_seconds }}&concurrency={{ plan.concurrency }}&ramp_seconds={{ plan.ramp_seconds }}">Run again</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

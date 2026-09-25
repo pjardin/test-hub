@@ -1,0 +1,91 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% block title %}Plan a load test — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head"><h1>Plan a load test</h1><div class="spacer"></div>
+  <a class="btn" href="{% url 'load_list' %}">Back</a></div>
+
+<form method="get" class="card">
+  <h2>1. Which test? <span class="sub">any test that already passes on its own</span></h2>
+  <label class="field"><span>Test</span>
+    <select name="test" onchange="this.form.submit()">
+      <option value="">— pick a test —</option>
+      {% for t in tests %}
+        <option value="{{ t.test_id }}" {% if test and test.test_id == t.test_id %}selected{% endif %}>{{ t.test_id }} — {{ t.name }}</option>
+      {% endfor %}
+    </select></label>
+</form>
+
+{% if test %}
+<div class="grid-2">
+  <form method="post" class="card">
+    {% csrf_token %}
+    <input type="hidden" name="test" value="{{ test.test_id }}">
+    <h2>2. How much load, for how long?</h2>
+
+    <label class="field"><span>Run the load for (seconds)</span>
+      <input type="number" name="duration_seconds" min="10" value="{{ form.duration_seconds }}"></label>
+    <label class="field"><span>Simultaneous virtual users (real browsers)</span>
+      <input type="number" name="concurrency" min="1" max="{{ capacity.ceiling }}" value="{{ form.concurrency }}"></label>
+    <label class="field"><span>Ramp them up over (seconds, 0 = all at once)</span>
+      <input type="number" name="ramp_seconds" min="0" value="{{ form.ramp_seconds }}"></label>
+    <label class="field"><span>Think time between passes (seconds)</span>
+      <input type="number" name="think_time_seconds" min="0" value="{{ form.think_time_seconds }}"></label>
+    <label class="field"><span>Stop after N passes (0 = only when time is up)</span>
+      <input type="number" name="max_iterations" min="0" value="0"></label>
+
+    <label class="checkbox"><input type="checkbox" name="keep_artifacts">
+      keep video/screenshots for every pass</label>
+    <p class="hint">Leave that off unless you are debugging: hundreds of
+      recordings of the same test is gigabytes of disk, and the recording
+      overhead distorts the timings you came for.</p>
+
+    <hr class="soft">
+    <label class="checkbox"><input type="checkbox" name="save_plan"> save this as a reusable plan</label>
+    <label class="field"><span>Plan name (if saving)</span>
+      <input type="text" name="name" placeholder="Dashboard under 5 users"></label>
+    <label class="field"><span>Notes</span>
+      <input type="text" name="description" placeholder="before/after the caching change"></label>
+
+    <div style="margin-top:16px">
+      <button class="btn primary" type="submit">Start the load test</button>
+      <a class="btn" href="?test={{ test.test_id }}&duration_seconds={{ form.duration_seconds }}&concurrency={{ form.concurrency }}&think_time_seconds={{ form.think_time_seconds }}">Recalculate</a>
+    </div>
+  </form>
+
+  <div class="card">
+    <h2>3. What that would mean</h2>
+    {% if preview.baseline.seconds %}
+      <div class="tiles">
+        <div class="tile"><div class="label">One pass takes</div>
+          <div class="value">{{ preview.baseline.seconds }}<small>s</small></div>
+          <div class="hint">median of {{ preview.baseline.samples }} past run(s)</div></div>
+        <div class="tile"><div class="label">Projected passes</div>
+          <div class="value">{{ preview.projection.iterations }}</div>
+          <div class="hint">{{ preview.projection.rate_per_minute }}/min</div></div>
+        <div class="tile"><div class="label">Each user does</div>
+          <div class="value">{{ preview.projection.per_user }}</div>
+          <div class="hint">passes in the window</div></div>
+      </div>
+      <p class="help">{{ preview.projection.note }}</p>
+    {% else %}
+      <div class="empty">This test has never completed, so there is no baseline
+        to plan from. <a href="{% url 'test_detail' test.test_id %}">Run it once</a>
+        first — the projection is built from its real duration.</div>
+    {% endif %}
+
+    {% if preview.warnings %}
+      <hr class="soft">
+      {% for w in preview.warnings %}
+        <div class="msg error" style="margin-bottom:8px">{{ w }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <hr class="soft">
+    <p class="help"><strong>This machine:</strong> {{ capacity.why }}.</p>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

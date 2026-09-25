@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-T14",
+  "name": "Freight: dock drag-and-drop in TypeScript",
+  "description": "DEMO-021's yard rules in TypeScript with locator.dragTo(): allowed drops land, a hazardous load at a normal door is refused with the reason, and the schedule survives a reload.",
+  "tags": ["freight", "typescript", "drag-and-drop", "demo"],
+  "version": "",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

@@ -1,0 +1,181 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block title %}{% if test %}Edit {{ test.test_id }}{% else %}New test{% endif %} — Test Hub{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'core/vendor/codemirror/codemirror.min.css' %}">
+<link rel="stylesheet" href="{% static 'core/vendor/codemirror/show-hint.min.css' %}">
+<link rel="stylesheet" href="{% static 'core/vendor/codemirror/dialog.min.css' %}">
+
+<div class="page-head">
+  <h1>{% if test %}Edit {{ test.test_id }}{% else %}New test{% endif %}</h1>
+  <div class="spacer"></div>
+  {% if test %}<a class="btn" href="{% url 'test_detail' test.test_id %}">Back to test</a>{% endif %}
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="grid-2">
+    <div class="card">
+      <h2>Metadata <span class="sub">saved to the .json sidecar next to the test file</span></h2>
+
+      {% if not test %}
+      <label class="field"><span>Test id — becomes part of the filename and is the permanent key for history (e.g. LOGIN-001)</span>
+        <input type="text" name="test_id" required value="{{ form_test_id|default:'' }}"
+               pattern="[A-Za-z0-9][A-Za-z0-9_.\-]*" placeholder="LOGIN-001"></label>
+
+      <label class="field"><span>Language — Python runs on the bundled harness; TypeScript runs on the TS engine's @playwright/test (/opt/pw-ts)</span>
+        <select name="language">
+          <option value="python" {% if form_language != "ts" %}selected{% endif %}>Python — def run(page, ctx)</option>
+          <option value="ts" {% if form_language == "ts" %}selected{% endif %}>TypeScript — test('...', async ({ page }) => ...)</option>
+        </select></label>
+      {% endif %}
+
+      <label class="field"><span>Name</span>
+        <input type="text" name="name" value="{% if test %}{{ test.name }}{% else %}{{ form_name|default:'' }}{% endif %}" placeholder="Login smoke test"></label>
+
+      <label class="field"><span>Description</span>
+        <textarea name="description" rows="3">{% if test %}{{ test.description }}{% else %}{{ form_description|default:'' }}{% endif %}</textarea></label>
+
+      <div class="field-row">
+        <label class="field"><span>Tags (comma separated)</span>
+          <input type="text" name="tags" value="{% if test %}{{ test.tags|join:', ' }}{% else %}{{ form_tags|default:'' }}{% endif %}" placeholder="smoke, login"></label>
+        <label class="field"><span>Target version tag</span>
+          <input type="text" name="version_tag" value="{% if test %}{{ test.version_tag }}{% else %}{{ form_version_tag|default:'' }}{% endif %}" placeholder="2.3"></label>
+        <label class="field"><span>Timeout seconds (0 = default)</span>
+          <input type="number" name="timeout_seconds" min="0" value="{% if test %}{{ test.timeout_seconds }}{% else %}{{ form_timeout|default:'0' }}{% endif %}"></label>
+        <label class="field"><span>Video recording</span>
+          <select name="video_mode">
+            <option value=""{% if test and test.video_mode == '' %} selected{% endif %}>use the global setting</option>
+            <option value="on"{% if test and test.video_mode == 'on' %} selected{% endif %}>always record</option>
+            <option value="off"{% if test and test.video_mode == 'off' %} selected{% endif %}>never record</option>
+          </select></label>
+      </div>
+      <p class="hint">Turn video off for tests that mostly wait. The video file
+        grows with wall-clock time whenever the page repaints — a 30-minute
+        wait on a page with a clock or progress bar costs about 80&nbsp;MB and
+        shows almost nothing. The <strong>activity replay</strong> still
+        captures those runs, and stays small.</p>
+
+      <label class="checkbox"><input type="checkbox" name="enabled"
+        {% if not test or test.enabled %}checked{% endif %}> enabled</label>
+
+      <hr class="soft">
+      <h2>Groups</h2>
+      {% for g in all_groups %}
+        <label class="checkbox"><input type="checkbox" name="groups" value="{{ g.pk }}"
+          {% if g.pk in member_group_ids %}checked{% endif %}> {{ g.name }}</label>
+      {% empty %}<p class="help">No groups yet — create them on the <a href="{% url 'groups_list' %}">Groups</a> page.</p>{% endfor %}
+
+      <p class="help">Weekly schedules are managed on the
+      <a href="{% url 'schedules_list' %}">Schedules</a> page{% if test %}{% with n=test.schedules.count %}{% if n %}
+      — this test currently has {{ n }}{% endif %}{% endwith %}{% endif %}.</p>
+    </div>
+
+    <div class="card">
+      <h2>Playwright code <span class="sub">{% if editor_mode == "javascript" %}an <code>@playwright/test</code> spec — <code>test('...', async ({ page }) => ...)</code>{% else %}the file must define <code>run(page, ctx)</code>{% endif %}</span></h2>
+      {% if editor_mode == "javascript" %}
+      <p class="help">
+        <code>page.goto('./')</code> — baseURL is the target URL from config.json ·
+        <code>await test.step('label', ...)</code> shows in Step timings ·
+        <code>process.env.PW_SECRET_NAME</code> reads a hub secret ·
+        <code>expect(...)</code> to assert.
+        <br>Editor: <strong>Ctrl-F</strong> search · <strong>Ctrl-/</strong> comment.
+      </p>
+      {% else %}
+      <p class="help">
+        <code>ctx.base_url</code> is the target URL from config.json ·
+        <code>ctx.log("...")</code> writes to the run log ·
+        <code>ctx.screenshot("name")</code> saves a screenshot ·
+        <code>with ctx.timed("label"):</code> times a phase ·
+        raise <code>AssertionError</code> to fail.
+        <br>Editor: type <code>page.</code> or <code>ctx.</code> (or press
+        <strong>Ctrl-Space</strong>) for the API list with docs ·
+        <strong>Ctrl-F</strong> search · <strong>Ctrl-/</strong> comment.
+      </p>
+      {% endif %}
+
+      <div style="margin-bottom:10px">
+        <button type="button" id="rrec-start" class="btn primary"
+          {% if test %}data-test-id="{{ test.test_id }}"{% endif %}
+          title="Streams the hub's own browser into a new tab; click and type there — works from any machine, no DevTools or display needed">
+          &#127909; Record in a browser tab</button>
+        <button type="button" id="rec-start" class="btn" {% if not recorder_available %}disabled
+          title="Native codegen needs a display on the machine running the hub"{% endif %}>
+          &#9210; Record with codegen (this machine)</button>
+        <button type="button" id="rec-stop" class="btn danger" disabled>Stop codegen</button>
+        <span id="rec-state" class="help"></span>
+        <div class="help">“Record in a browser tab” opens the Remote Recorder: the hub drives
+        its own bundled Chromium and you interact with a live picture of it — so it works on a
+        deployed hub (AWS/office) and from a locked-down workstation browser. Everything
+        finishes IN that tab: {% if test %}stopping offers “append the new steps to this
+        test” (it shows which steps the test already has){% else %}stopping offers “create
+        a new test”, which brings you back here with the code filled in{% endif %}.
+        If your browser blocks the pop-up (Safari), use the “Record new test” button on the
+        Tests page instead — it opens in this same tab.</div>
+      </div>
+
+      <textarea class="code" name="code" id="id_code" spellcheck="false"
+                data-mode="{{ editor_mode }}">{{ code }}</textarea>
+    </div>
+  </div>
+
+  <div class="page-head">
+    <button class="btn primary" type="submit">{% if test %}Save changes{% else %}Create test{% endif %}</button>
+    <span class="help">Saving writes the test file (.py or .spec.ts) and its .json sidecar — the folder stays the source of truth.</span>
+    <div class="spacer"></div>
+  </div>
+</form>
+
+{% if test %}
+<form method="post" onsubmit="return confirm('Archive {{ test.test_id }}? Files move to tests/_archive/, run history is kept.')">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="archive">
+  <button class="btn danger" type="submit">Archive this test</button>
+</form>
+{% endif %}
+
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'core/vendor/codemirror/codemirror.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/python.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/javascript.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/show-hint.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/matchbrackets.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/closebrackets.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/comment.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/searchcursor.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/dialog.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/search.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/active-line.min.js' %}"></script>
+<script src="{% static 'core/editor.js' %}"></script>
+{{ template_py|json_script:"tpl-py" }}
+{{ template_ts|json_script:"tpl-ts" }}
+<script>
+/* New-test language select: highlight in the chosen language, and if the
+   editor still holds a pristine starter template, swap it for the other
+   language's starter. Never touches code the user has edited (the server
+   double-checks: a pristine wrong-language template is replaced there too). */
+(function () {
+  var sel = document.querySelector('select[name="language"]');
+  if (!sel) return;
+  var tplPy = JSON.parse(document.getElementById('tpl-py').textContent);
+  var tplTs = JSON.parse(document.getElementById('tpl-ts').textContent);
+  function value() {
+    return window.hubEditor ? hubEditor.getValue()
+                            : document.getElementById('id_code').value;
+  }
+  function setValue(v) {
+    if (window.hubEditor) hubEditor.setValue(v);
+    else document.getElementById('id_code').value = v;
+  }
+  sel.addEventListener('change', function () {
+    var ts = sel.value === 'ts';
+    var cur = value().trim();
+    if (!cur || cur === tplPy.trim() || cur === tplTs.trim())
+      setValue(ts ? tplTs : tplPy);
+    if (window.hubEditor)
+      hubEditor.setOption('mode', ts ? 'javascript' : 'python');
+  });
+})();
+</script>
+{% endblock %}

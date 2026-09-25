@@ -1,0 +1,31 @@
+<div class="kpis">
+  <div class="kpi"><span class="label">Naive plan</span><strong id="plan-initial">{{ plan.initial_km|floatformat:"0g" }} km</strong></div>
+  <div class="kpi good"><span class="label">Optimized</span><strong id="plan-best">{{ plan.best_km|floatformat:"0g" }} km</strong></div>
+  <div class="kpi good"><span class="label">Saved</span><strong id="plan-saving" data-pct="{{ plan.saving_pct }}">{{ plan.saving_pct }}%</strong></div>
+  <div class="kpi"><span class="label">Trucks used</span><strong id="plan-trucks">{{ plan.trucks_used }} of {{ plan.trucks }}</strong></div>
+  <div class="kpi"><span class="label">CO&#8322;</span><strong>{{ plan.co2_kg|floatformat:"0g" }} kg</strong></div>
+</div>
+<div class="two-col wide-left">
+  <figure class="route-map region-map">
+    <svg viewBox="0 0 {{ map.w }} {{ map.h }}" class="map" role="img" aria-label="Delivery routes around {{ plan.depot }}">
+      <image href="{{ map.basemap }}" x="0" y="0" width="{{ map.w }}" height="{{ map.h }}"/>
+      {% for r in map.routes %}<polyline class="route" data-truck="{{ r.truck }}" points="{{ r.points }}" style="stroke: {{ r.color }}"/>{% endfor %}
+      {% for s in map.stops %}<circle class="stop" data-city="{{ s.name }}" cx="{{ s.x }}" cy="{{ s.y }}" r="5"><title>{{ s.name }} ({{ s.demand }} pallets)</title></circle>{% endfor %}
+      <rect class="depot" x="{{ map.depot.rx }}" y="{{ map.depot.ry }}" width="14" height="14"><title>Depot: {{ map.depot.name }}</title></rect>
+    </svg>
+    <figcaption>{{ plan.stops }} stops around the {{ map.depot.name }} depot, {{ plan.region_label }} &middot; straight lines between stops; distances include a 25% road factor</figcaption>
+  </figure>
+  <figure class="chart"><figcaption>How the plan improved (km)</figcaption><div class="chart-box tall"><canvas id="job-chart"></canvas></div></figure>
+</div>
+<table class="data" id="routes-table">
+  <thead><tr><th>Truck</th><th>Stops, in order</th><th class="num">Load</th><th class="num">Distance</th><th class="num">Time</th></tr></thead>
+  <tbody>
+    {% for r in plan.routes %}
+    <tr data-truck="{{ r.truck }}"><td><span class="swatch" style="background: {{ r.color }}"></span>Truck {{ r.truck }}</td>
+      <td>{{ r.stops|join:" → " }}</td>
+      <td class="num">{{ r.load }} / {{ plan.capacity }}</td>
+      <td class="num">{{ r.km|floatformat:"0g" }} km</td>
+      <td class="num">{{ r.hours }} h</td></tr>
+    {% endfor %}
+  </tbody>
+</table>

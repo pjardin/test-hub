@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-010",
+  "name": "Freight: home page and tracking",
+  "description": "Smoke test for Acme Freight, the built-in demo site: the home page answers, a shipment in transit tracks correctly, and an unknown number says so.",
+  "tags": ["freight", "smoke", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-100",
+  "name": "Slow marathon (kill-me demo)",
+  "description": "Runs ~75 seconds on purpose: use it to try the live view, the ETA display and the Kill button.",
+  "tags": ["demo", "slow"],
+  "version": "1.0",
+  "timeout_seconds": 180,
+  "enabled": true,
+  "schedules": []
+}

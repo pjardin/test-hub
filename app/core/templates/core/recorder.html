@@ -1,0 +1,403 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block title %}Remote Recorder — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Remote Recorder</h1>
+  <span class="help">
+    {% if for_test %}continuing <strong>{{ for_test.test_id }}</strong> —
+    new steps will be offered as an append to its code ·{% endif %}
+    recording <code>{{ target_url }}{{ start_path }}</code> in the hub's own browser —
+    nothing runs on your machine, no DevTools needed</span>
+  <div class="spacer"></div>
+  <button class="btn danger" id="rr-stop">&#9632; Stop recording</button>
+  <button class="btn" id="rr-cancel">Discard</button>
+</div>
+<div id="rr-ctx" data-test-id="{% if for_test %}{{ for_test.test_id }}{% endif %}" data-test-type="{% if for_test %}{{ for_test.test_type }}{% endif %}" data-start="{{ start_path }}" hidden></div>
+
+<div class="grid-2" style="grid-template-columns: 2.2fr 1fr">
+  <div class="card">
+    <div id="rr-stage" class="live-frame" tabindex="0"
+         style="cursor: crosshair; outline: none; user-select: none;">
+      <img id="rr-img" alt="remote browser" draggable="false" style="display:none">
+      <div id="rr-msg" class="placeholder">starting the hub's browser…</div>
+    </div>
+    <p class="help">Click and type directly on the picture — your input is replayed in the
+      hub's browser. Scroll with the mouse wheel. <strong>Enter</strong>, Backspace, Tab
+      and arrows work.
+      <strong>Right-click any element to add a CHECK or a WAIT</strong> — no code needed.</p>
+  </div>
+
+  <div>
+  <div class="card" id="rr-palette" hidden>
+    <h2>Add a check or wait <span class="sub" id="pal-sel"></span></h2>
+    <div id="pal-summary" class="help" style="margin-bottom:10px"></div>
+
+    <div class="pal-group" id="pal-checks">
+      <div class="pal-row" id="pal-text-row">
+        <button type="button" class="btn small" data-pal="assert_text">&#10003; Check it says</button>
+        <input type="text" id="pal-text">
+      </div>
+      <div class="pal-row" id="pal-value-row" hidden>
+        <button type="button" class="btn small" data-pal="assert_value">&#10003; Check its value is</button>
+        <input type="text" id="pal-value">
+      </div>
+      <div class="pal-row">
+        <button type="button" class="btn small" data-pal="assert_visible">&#10003; Check it's visible</button>
+      </div>
+      <div class="pal-row">
+        <button type="button" class="btn small" data-pal="assert_css" data-css="color">&#10003; Check text color</button>
+        <span class="swatch" id="pal-color-sw"></span><code id="pal-color"></code>
+      </div>
+      <div class="pal-row">
+        <button type="button" class="btn small" data-pal="assert_css" data-css="background-color">&#10003; Check background</button>
+        <span class="swatch" id="pal-bg-sw"></span><code id="pal-bg"></code>
+      </div>
+    </div>
+
+    <hr class="soft">
+    <div class="pal-row">
+      <span class="help">Waits (how long at most:</span>
+      <select id="pal-timeout">
+        <option value="5000">5 s</option>
+        <option value="30000" selected>30 s</option>
+        <option value="120000">2 min</option>
+        <option value="600000">10 min</option>
+        <option value="3600000">1 hour</option>
+      </select><span class="help">)</span>
+    </div>
+    <div class="pal-row">
+      <button type="button" class="btn small" data-pal="wait_visible">&#8987; Wait until it appears</button>
+      <button type="button" class="btn small" data-pal="wait_hidden">&#8987; Wait until it's gone</button>
+    </div>
+    <div class="pal-row">
+      <button type="button" class="btn small" data-pal="wait_text">&#8987; Wait until it says</button>
+      <input type="text" id="pal-wait-text">
+    </div>
+    <hr class="soft">
+    <button type="button" class="btn small" id="pal-close">Close</button>
+  </div>
+
+  <div class="card">
+    {% if for_test %}
+    <h2>Already in {{ for_test.test_id }}</h2>
+    <div id="rr-prior" class="mono" style="font-size:11px; max-height:160px; overflow:auto; color: var(--muted)"></div>
+    <hr class="soft">
+    {% endif %}
+    <h2>New recorded steps <span class="sub" id="rr-count"></span></h2>
+    <div id="rr-steps" class="mono" style="font-size:12px; max-height:320px; overflow:auto">
+      <div class="empty">No steps yet — interact with the page.</div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<div class="card" id="rr-result" hidden>
+  <h2>Recording finished — what next?</h2>
+  <p id="rr-langwrap" hidden style="margin:0 0 10px">
+    Generate as:
+    <label><input type="radio" name="rr-lang" value="python" checked> Python</label>
+    <label style="margin-left:10px"><input type="radio" name="rr-lang" value="ts"> TypeScript (@playwright/test)</label>
+  </p>
+  <div style="margin-bottom:12px" id="rr-actions">
+    <button class="btn primary" id="rr-create" hidden>&#10133; Create a new test from this recording</button>
+    <button class="btn primary" id="rr-append" hidden>&#8613; Append steps to <span class="rr-tid"></span> and open the editor</button>
+    <button class="btn danger" id="rr-replace" hidden>Replace <span class="rr-tid"></span>'s code entirely</button>
+    <button class="btn" id="rr-copy">Copy code</button>
+  </div>
+  <p class="help" id="rr-next-hint"></p>
+  <pre class="log code-view" id="rr-code"></pre>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'core/vendor/codemirror/codemirror.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/python.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/javascript.min.js' %}"></script>
+<script src="{% static 'core/vendor/codemirror/runmode.min.js' %}"></script>
+<script src="{% static 'core/codeview.js' %}"></script>
+<script>
+(function () {
+  "use strict";
+  const stage = document.getElementById("rr-stage");
+  const img = document.getElementById("rr-img");
+  const msg = document.getElementById("rr-msg");
+  const stepsEl = document.getElementById("rr-steps");
+  const countEl = document.getElementById("rr-count");
+  const forTest = document.getElementById("rr-ctx").dataset.testId || "";
+  const u = hub.u;
+  let seq = "", viewport = { width: 1280, height: 800 };
+  let finished = false, lastMove = 0, lastUrl = null;
+
+  function post(url, data) { return hub.post(url, data).catch(() => {}); }
+
+  /* ---- frame stream: fetch -> blob swap ---------------------------------- */
+  async function frameLoop() {
+    if (finished) return;
+    try {
+      const resp = await fetch(u("/api/remote-rec/frame/?seq=") + seq);
+      if (resp.status === 200) {
+        seq = resp.headers.get("X-Seq") || "";
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        img.onload = () => { if (lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = url; };
+        img.src = url;
+        img.style.display = "block";
+        msg.style.display = "none";
+      }
+    } catch (e) { /* transient */ }
+    setTimeout(frameLoop, 120);
+  }
+
+  /* ---- input capture ------------------------------------------------------ */
+  function coords(ev) {
+    const r = img.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(viewport.width,
+          (ev.clientX - r.left) * (viewport.width / r.width))),
+      y: Math.max(0, Math.min(viewport.height,
+          (ev.clientY - r.top) * (viewport.height / r.height))),
+    };
+  }
+  stage.addEventListener("mousedown", (ev) => {
+    ev.preventDefault(); stage.focus();
+    if (ev.button === 2) return;               // right button = inspect, not the page
+    post(u("/api/remote-rec/input/"), Object.assign({ type: "mousedown",
+      button: "left", clickCount: ev.detail || 1 }, coords(ev)));
+  });
+  stage.addEventListener("mouseup", (ev) => {
+    ev.preventDefault();
+    if (ev.button === 2) return;
+    post(u("/api/remote-rec/input/"), Object.assign({ type: "mouseup",
+      button: "left", clickCount: ev.detail || 1 }, coords(ev)));
+  });
+  stage.addEventListener("mousemove", (ev) => {
+    const now = Date.now();
+    if (now - lastMove < 90) return;
+    lastMove = now;
+    post(u("/api/remote-rec/input/"), Object.assign({ type: "mousemove" }, coords(ev)));
+  });
+  stage.addEventListener("wheel", (ev) => {
+    ev.preventDefault();
+    post(u("/api/remote-rec/input/"), Object.assign({ type: "wheel",
+      deltaX: ev.deltaX, deltaY: ev.deltaY }, coords(ev)));
+  }, { passive: false });
+  /* ---- right-click -> point-and-check palette ------------------------------ */
+  const palette = {
+    el: document.getElementById("rr-palette"),
+    info: null,
+    waitingSeq: null,
+  };
+  stage.addEventListener("contextmenu", (ev) => {
+    ev.preventDefault();
+    palette.waitingSeq = lastInspectSeq;        // wait for the NEXT result
+    post(u("/api/remote-rec/inspect/"), coords(ev));
+    document.getElementById("pal-summary").textContent = "inspecting…";
+    palette.el.hidden = false;
+  });
+  function showPalette(info) {
+    palette.info = info;
+    if (!info || info.error) {
+      document.getElementById("pal-summary").textContent =
+        "could not inspect that spot" + (info && info.error ? " (" + info.error + ")" : "");
+      return;
+    }
+    document.getElementById("pal-sel").textContent = info.selector;
+    document.getElementById("pal-summary").innerHTML =
+      "<strong>&lt;" + hub.esc(info.tag) + "&gt;</strong>" +
+      (info.text ? " — “" + hub.esc(info.text.slice(0, 60)) + "”" : " (no text)");
+    const textIn = document.getElementById("pal-text");
+    textIn.value = info.text ? info.text.slice(0, 60) : "";
+    document.getElementById("pal-wait-text").value = textIn.value;
+    const valRow = document.getElementById("pal-value-row");
+    valRow.hidden = info.value === null || info.value === undefined;
+    document.getElementById("pal-value").value = info.value || "";
+    document.getElementById("pal-color").textContent = info.color || "";
+    document.getElementById("pal-color-sw").style.background = info.color || "transparent";
+    document.getElementById("pal-bg").textContent = info.background || "";
+    document.getElementById("pal-bg-sw").style.background = info.background || "transparent";
+  }
+  document.getElementById("pal-close").addEventListener("click", () => {
+    palette.el.hidden = true;
+  });
+  document.getElementById("rr-palette").addEventListener("click", async (ev) => {
+    const btn = ev.target.closest("[data-pal]");
+    if (!btn || !palette.info || palette.info.error) return;
+    const action = btn.dataset.pal;
+    const step = { action, selector: palette.info.selector };
+    if (action === "assert_text") step.value = document.getElementById("pal-text").value;
+    if (action === "assert_value") step.value = document.getElementById("pal-value").value;
+    if (action === "assert_css") {
+      step.extra = btn.dataset.css;
+      step.value = btn.dataset.css === "color" ? palette.info.color : palette.info.background;
+    }
+    if (action.startsWith("wait_")) {
+      step.timeout_ms = parseInt(document.getElementById("pal-timeout").value, 10);
+      if (action === "wait_text") step.value = document.getElementById("pal-wait-text").value;
+    }
+    try {
+      await hub.post(u("/api/remote-rec/add-step/"), step);
+      hub.toast("Step added", "success");
+      palette.el.hidden = true;
+    } catch (err) { hub.toast(err.message, "error"); }
+  });
+  let lastInspectSeq = 0;
+
+  const SPECIAL = ["Enter", "Backspace", "Tab", "Escape", "Delete",
+                   "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"];
+  stage.addEventListener("keydown", (ev) => {
+    if (ev.metaKey || ev.ctrlKey) return;   // keep browser shortcuts local
+    if (ev.key.length === 1) {
+      ev.preventDefault();
+      post(u("/api/remote-rec/input/"), { type: "text", text: ev.key });
+    } else if (SPECIAL.includes(ev.key)) {
+      ev.preventDefault();
+      post(u("/api/remote-rec/input/"), { type: "key", key: ev.key });
+    }
+  });
+
+  /* ---- status / steps ------------------------------------------------------- */
+  const LABELS = { click: "click", fill: "fill", select: "select_option", press: "press",
+                   assert_text: "✓ says", assert_value: "✓ value", assert_visible: "✓ visible",
+                   assert_css: "✓ style", wait_visible: "⏳ until visible",
+                   wait_hidden: "⏳ until gone", wait_text: "⏳ until it says" };
+  async function statusLoop() {
+    if (finished) return;
+    try {
+      const s = await fetch(u("/api/remote-rec/status/")).then(r => r.json());
+      if (s.viewport) viewport = s.viewport;
+      if (typeof s.inspect_seq === "number" && s.inspect_seq !== lastInspectSeq) {
+        const stale = palette.waitingSeq !== null && s.inspect_seq > palette.waitingSeq;
+        lastInspectSeq = s.inspect_seq;
+        if (stale && !palette.el.hidden) { showPalette(s.inspect); palette.waitingSeq = null; }
+      }
+      const prior = document.getElementById("rr-prior");
+      if (prior && s.prior_steps && !prior.childElementCount) {
+        prior.innerHTML = s.prior_steps.map(l => "<div>" + hub.esc(l) + "</div>").join("")
+          || '<div class="empty">no steps in the file yet</div>';
+      }
+      if (s.state === "recording") {
+        countEl.textContent = s.step_count + " step(s)";
+        if (s.steps && s.steps.length) {
+          stepsEl.innerHTML = s.steps.map(st =>
+            "<div>" + hub.esc(LABELS[st.action] || st.action) + "(" +
+            hub.esc(st.selector) +
+            (st.value && st.action !== "click" ? (", “" + hub.esc(String(st.value).slice(0, 30)) + "”") : "") +
+            (st.timeout_ms ? (", ≤" + Math.round(st.timeout_ms / 1000) + "s") : "") +
+            ")</div>").join("");
+        }
+      } else if (s.state === "error") {
+        finished = true;
+        msg.style.display = "block"; img.style.display = "none";
+        msg.textContent = "recorder error: " + (s.error || "unknown");
+        return;
+      } else if (s.state === "done") {
+        showResult(s);
+        return;
+      }
+    } catch (e) { /* transient */ }
+    setTimeout(statusLoop, 900);
+  }
+
+  /* One recording, two languages: the session returns python AND
+     TypeScript. For an existing test the target's language wins; for
+     create-new the radio picks, and travels to the New Test form. */
+  let lastSnap = null;
+  const targetType = document.getElementById("rr-ctx").dataset.testType || "";
+  function chosenLang() {
+    if (forTest) return targetType === "ts" ? "ts" : "python";
+    const sel = document.querySelector('input[name="rr-lang"]:checked');
+    return sel ? sel.value : "python";
+  }
+  function renderCode() {
+    if (!lastSnap) return;
+    const lang = chosenLang();
+    const codeEl = document.getElementById("rr-code");
+    codeEl.textContent = (lang === "ts" ? lastSnap.code_ts : lastSnap.code) || "";
+    codeEl.dataset.mode = lang === "ts" ? "javascript" : "python";
+    if (window.hubHighlight) window.hubHighlight(codeEl);
+  }
+  document.querySelectorAll('input[name="rr-lang"]').forEach((el) =>
+    el.addEventListener("change", renderCode));
+
+  function showResult(snap) {
+    finished = true;
+    lastSnap = snap || {};
+    document.getElementById("rr-result").hidden = false;
+    document.getElementById("rr-langwrap").hidden = !!forTest;
+    renderCode();
+    msg.style.display = "block"; img.style.display = "none";
+    msg.textContent = "recording finished — choose what to do with it below";
+    document.querySelectorAll(".rr-tid").forEach(el => { el.textContent = forTest; });
+    document.getElementById(forTest ? "rr-append" : "rr-create").hidden = false;
+    if (forTest) document.getElementById("rr-replace").hidden = false;
+    document.getElementById("rr-next-hint").textContent = forTest
+      ? (targetType === "ts"
+          ? "Append adds the recording as a new test() block at the end of the spec; Replace overwrites the whole file."
+          : "Append adds the new steps to the end of run(); Replace overwrites the whole file.")
+      : "You'll land on the New Test form with this code already filled in — add an id and a name, then Create.";
+    document.getElementById("rr-result").scrollIntoView({ behavior: "smooth" });
+  }
+
+  document.getElementById("rr-create").addEventListener("click", () => {
+    window.location = u("/tests/new/?recorded=1&lang=" + chosenLang());
+  });
+  async function applyMode(mode) {
+    try {
+      const r = await hub.post(u("/api/remote-rec/apply/"), { mode });
+      window.location = r.redirect;
+    } catch (err) { hub.toast(err.message, "error"); }
+  }
+  document.getElementById("rr-append").addEventListener("click", () => applyMode("append"));
+  document.getElementById("rr-replace").addEventListener("click", () => {
+    if (confirm("Overwrite " + forTest + "'s entire code with the recording?"))
+      applyMode("replace");
+  });
+
+  document.getElementById("rr-stop").addEventListener("click", async () => {
+    const s = await hub.post(u("/api/remote-rec/stop/"), {}).catch(e => null);
+    if (s && s.code !== undefined) showResult(s);
+  });
+  document.getElementById("rr-cancel").addEventListener("click", async () => {
+    if (!confirm("Discard this recording?")) return;
+    finished = true;
+    await post(u("/api/remote-rec/clear/"), {});
+    window.close();
+    msg.style.display = "block"; img.style.display = "none";
+    msg.textContent = "recording discarded — you can close this tab";
+  });
+  document.getElementById("rr-copy").addEventListener("click", () => {
+    navigator.clipboard.writeText(document.getElementById("rr-code").textContent)
+      .then(() => hub.toast("copied", "success"));
+  });
+
+  /* The page owns session startup: attach to a live session, or start a
+     fresh one (clearing any finished/failed leftover first). This keeps the
+     editor button popup-safe -- it only opens this tab. */
+  (async function init() {
+    try {
+      const s = await fetch(u("/api/remote-rec/status/")).then(r => r.json());
+      if (s.state === "done" || s.state === "error") {
+        await post(u("/api/remote-rec/clear/"), {});
+      }
+      if (s.state !== "recording" && s.state !== "starting") {
+        const started = await hub.post(u("/api/remote-rec/start/"),
+                                       { test_id: forTest,
+                                         start: document.getElementById("rr-ctx").dataset.start || "" }).catch(e => null);
+        if (!started) {
+          msg.textContent = "could not start a recording session (is another one running?)";
+          return;
+        }
+      }
+    } catch (e) {
+      msg.textContent = "could not reach the hub to start the session";
+      return;
+    }
+    frameLoop();
+    statusLoop();
+    stage.focus();
+  })();
+})();
+</script>
+{% endblock %}

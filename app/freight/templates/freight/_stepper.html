@@ -1,0 +1,7 @@
+<ol class="stepper" aria-label="Quote steps">
+  {% for key, label in steps %}
+  <li class="{% if key == step %}current{% endif %}" data-step="{{ key }}"{% if key == step %} aria-current="step"{% endif %}>
+    <span class="num">{{ forloop.counter }}</span> {{ label }}
+  </li>
+  {% endfor %}
+</ol>

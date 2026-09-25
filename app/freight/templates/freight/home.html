@@ -1,0 +1,55 @@
+{% extends "freight/base.html" %}
+{% block title %}Freight that shows up{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow">Air + ground freight</p>
+    <h1 id="hero-title">Freight that shows up.</h1>
+    <p class="lead">{{ stats.hubs }} hubs, {{ stats.lanes }} lanes, every parcel scanned at every step
+      &mdash; and a price in seconds.</p>
+    <form class="track-box" action="{% url 'freight:track' %}" method="get" role="search">
+      <label for="home-track-id">Track a shipment</label>
+      <div class="inline">
+        <input id="home-track-id" name="id" placeholder="e.g. AF-100001" autocomplete="off">
+        <button type="submit" class="btn primary" id="home-track-btn">Track</button>
+      </div>
+      <p class="hint">Try {% for e in examples %}<a href="{% url 'freight:track' %}?id={{ e }}">{{ e }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    </form>
+    <p><a class="btn cta" id="get-quote" href="{% url 'freight:quote' %}?restart=1">Get an instant quote</a></p>
+  </div>
+  <figure class="network-map">
+    {% if flags.a11y_regressions %}{# 2.x: the redesigned map lost its text alternative #}
+    <svg viewBox="0 0 {{ network.w }} {{ network.h }}" class="map" role="img">
+    {% else %}
+    <svg viewBox="0 0 {{ network.w }} {{ network.h }}" class="map" role="img" aria-labelledby="network-title">
+      <title id="network-title">The Acme Freight air network: {{ stats.hubs }} hubs</title>
+    {% endif %}
+      <image href="{{ network.basemap }}" x="0" y="0" width="{{ network.w }}" height="{{ network.h }}"/>
+      <g class="lanes">{% for lane in network.lanes %}<path class="lane" d="{{ lane.d }}" data-lane="{{ lane.name }}"/>{% endfor %}</g>
+      <g class="hubs">{% for h in network.hubs %}<g class="hub{% if h.new %} hub-new{% endif %}" data-hub="{{ h.code }}"><circle cx="{{ h.x }}" cy="{{ h.y }}" r="4.5"/><text x="{{ h.x }}" y="{{ h.ly }}">{{ h.code }}</text></g>{% endfor %}</g>
+    </svg>
+    <figcaption>{{ stats.hubs }} hubs &middot; {{ stats.lanes }} lanes{% if network.new_hubs %} &middot; new this year: {{ network.new_hubs|join:", " }}{% endif %}</figcaption>
+  </figure>
+</section>
+
+<section class="services" aria-labelledby="services-title">
+  <h2 id="services-title">Pick your pace</h2>
+  <div class="cards">
+    {% for s in services %}
+    <article class="card service-card" data-service="{{ s.key }}">
+      <h3>{{ s.label }}</h3>
+      <p class="days">{{ s.days }}</p>
+      <p>{% if s.key == "economy" %}Consolidated ground and deferred air: the budget choice for anything that is not urgent.
+         {% elif s.key == "standard" %}Our default. The next available lane, and a scan at every hub along the way.
+         {% else %}Priority air on the first departure out, delivered by the end of the next business day where we can.{% endif %}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="stats-strip" aria-label="Acme Freight in numbers">
+  <div><strong id="stat-hubs">{{ stats.hubs }}</strong> hubs</div>
+  <div><strong id="stat-lanes">{{ stats.lanes }}</strong> lanes</div>
+  <div><strong id="stat-shipments">{{ stats.shipments }}</strong> shipments in the last six weeks</div>
+</section>
+{% endblock %}

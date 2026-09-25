@@ -1,0 +1,66 @@
+{% load hubfmt %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Run #{{ run.pk }} — {{ run.test.test_id }} — {{ run.status }}</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 30px auto;
+         max-width: 900px; color: #0b0b0b; line-height: 1.5; padding: 0 16px; }
+  h1 { font-size: 20px; } h2 { font-size: 15px; margin-top: 28px; }
+  .badge { display: inline-block; padding: 3px 14px; border-radius: 999px; font-weight: 700; color: #fff; }
+  .passed { background: #0ca30c; } .failed, .error, .timeout { background: #d03b3b; }
+  .killed, .aborted { background: #898781; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  td, th { border-bottom: 1px solid #e1e0d9; padding: 6px 8px; text-align: left; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  pre { background: #f4f4f1; border: 1px solid #e1e0d9; border-radius: 8px; padding: 12px;
+        white-space: pre-wrap; word-break: break-word; font-size: 12px; }
+  img { max-width: 100%; border: 1px solid #e1e0d9; border-radius: 8px; margin: 6px 0 2px; }
+  .cap { color: #898781; font-size: 12px; margin-bottom: 14px; }
+  .meta { color: #52514e; font-size: 13px; }
+</style>
+</head>
+<body>
+  <h1>Test run report — {{ run.test.test_id }} <span class="badge {{ run.status }}">{{ run.status|upper }}</span></h1>
+  <p class="meta">
+    {{ run.test.display_name }}<br>
+    run #{{ run.pk }} · {{ run.queued_at|date:"Y-m-d H:i:s" }} ·
+    duration {% if run.duration_seconds is not None %}{{ run.duration_seconds|duration }}{% else %}—{% endif %} ·
+    target version {{ run.target_version|default:"?" }} · browser {{ run.browser }} ·
+    started by: {{ run.trigger }}<br>
+    report generated {{ generated|date:"Y-m-d H:i:s" }} — self-contained file, safe to attach anywhere
+  </p>
+
+  {% if error_short %}
+  <h2>What went wrong</h2>
+  <pre>{{ error_short }}</pre>
+  {% endif %}
+
+  {% if timings %}
+  <h2>Step timings</h2>
+  <table>
+    <tr><th>at</th><th>step</th><th class="num">ms</th></tr>
+    {% for t in timings %}
+    <tr><td class="num">+{{ t.t }}s</td><td>{{ t.name }}</td><td class="num">{{ t.ms }}</td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% if shots %}
+  <h2>Screenshots</h2>
+  {% for s in shots %}
+    <img src="data:image/png;base64,{{ s.b64 }}" alt="{{ s.name }}">
+    <div class="cap">{{ s.name }}</div>
+  {% endfor %}
+  {% endif %}
+
+  {% if run.error_message %}
+  <h2>Full technical error</h2>
+  <pre>{{ run.error_message }}</pre>
+  {% endif %}
+
+  <p class="meta">Video and Playwright trace stay on the hub:
+    results/{{ run.artifacts_rel }}/ — open the run page for the replay.</p>
+</body>
+</html>

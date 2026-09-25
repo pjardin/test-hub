@@ -1,0 +1,10 @@
+{% extends "freight/ops_base.html" %}
+{% block title %}Job not found{% endblock %}
+{% block ops %}
+<section class="panel" id="job-gone">
+  <h1>That job is gone</h1>
+  <p>Jobs live in the server's memory, so a restart forgets them (and only the most recent ones are kept).
+     Start it again from the <a href="{% url 'freight:optimizer' %}">route optimizer</a>,
+     <a href="{% url 'freight:import' %}">manifest import</a> or <a href="{% url 'freight:reports' %}">reports</a>.</p>
+</section>
+{% endblock %}

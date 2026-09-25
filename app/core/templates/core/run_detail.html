@@ -1,0 +1,199 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% load l10n %}
+{% block title %}Run #{{ run.pk }} {{ run.test.test_id }} — Test Hub{% endblock %}
+{% block content %}
+<div data-live="run" data-live-manual{% if not run.is_active %} data-live-frozen{% endif %}>
+
+<div class="page-head">
+  {% if older_id %}<a class="btn small" href="{% url 'run_detail' older_id %}" title="older run of this test">&larr;</a>{% endif %}
+  {% if newer_id %}<a class="btn small" href="{% url 'run_detail' newer_id %}" title="newer run of this test">&rarr;</a>{% endif %}
+  <h1>Run #{{ run.pk }} — <a href="{% url 'test_detail' run.test.test_id %}">{{ run.test.test_id }}</a></h1>
+  <span id="live-status"><span class="badge {{ run.status }}">{{ run.status }}</span></span>
+  <span id="live-meta" class="help"></span>
+  <div class="spacer"></div>
+  {% if run.is_active %}
+    <button class="btn danger" data-kill-run="{{ run.pk }}">Kill this run</button>
+  {% else %}
+    <button class="btn danger" data-delete-run="{{ run.pk }}"
+            title="Delete this run's video/screenshots/trace. The run itself stays in the charts.">Delete files</button>
+    <a class="btn" href="{% url 'run_report' run.pk %}"
+       title="One self-contained HTML file with the outcome, plain-language error, timings and screenshots — attach it to an email or ticket">&#128196; Download report</a>
+    <button class="btn" data-run-test="{{ run.test.test_id }}" data-go-batch>Run again</button>
+  {% endif %}
+</div>
+
+<p class="help">
+  queued {{ run.queued_at|date:"Y-m-d H:i:s" }}
+  {% if run.started_at %} · started {{ run.started_at|date:"H:i:s" }}{% endif %}
+  {% if run.finished_at %} · finished {{ run.finished_at|date:"H:i:s" }}{% endif %}
+  {% if run.duration_seconds is not None %} · duration {{ run.duration_seconds|duration }}{% endif %}
+  · target v{{ run.target_version|default:"?" }} · {{ run.browser }}{% if run.headed %} (headed){% endif %}
+  · trigger: {{ run.trigger }}
+  {% if run.batch %} · batch: <a href="{% url 'batch_detail' run.batch.pk %}">{{ run.batch.label }}</a>{% endif %}
+  {% if eta is not None %} · est. remaining {{ eta|floatformat:0 }}s{% endif %}
+</p>
+
+{% if run.is_active %}
+<div id="live-run" data-run-id="{{ run.pk }}">
+  <div class="grid-2">
+    <div class="card">
+      <h2>Live view <span class="sub">~1 frame/s from the browser (chromium-family only)</span></h2>
+      <div class="live-frame">
+        <img id="live-img" alt="live browser frame" style="display:none">
+      </div>
+      <p class="help">Keep this tab open in a second window to watch the test run.</p>
+    </div>
+    <div class="card">
+      <h2>Live log</h2>
+      <pre class="log" id="live-log">waiting for output…</pre>
+    </div>
+  </div>
+</div>
+{% else %}
+
+{% if run.error_message %}
+<div class="card" style="border-left: 4px solid var(--critical)">
+  <h2>What went wrong</h2>
+  <div class="grid-2" style="grid-template-columns: 1.4fr 1fr">
+    <div>
+      <pre class="log" style="font-size:13px">{{ error_short }}</pre>
+      <details style="margin-top:8px">
+        <summary class="help" style="cursor:pointer">Technical details (full error)</summary>
+        <pre class="log">{{ run.error_message }}</pre>
+      </details>
+    </div>
+    {% if art.failure %}
+    <div>
+      <a href="{% url 'artifact' art.base|add:'/failure.png' %}" target="_blank">
+        <img src="{% url 'artifact' art.base|add:'/failure.png' %}" alt="the page at the moment of failure"
+             style="max-width:100%; border:1px solid var(--border); border-radius:8px"></a>
+      <div class="help">the page at the moment it failed</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if frames or timings %}
+<div class="replay-grid{% if frames and timings %} two{% endif %}">
+{% if frames %}
+<div class="card replay-card">
+  <h2>Activity replay <span class="sub">{{ frames|length }} frames, captured only while the page
+    was actually changing — idle waits are skipped automatically</span></h2>
+  {{ frames|json_script:"frames-data" }}
+  <div id="reel" class="live-frame reel">
+    <img id="reel-img" alt="activity frame">
+    <div id="reel-gap" class="gap-badge" hidden></div>
+  </div>
+  <div class="reel-controls">
+    <button type="button" class="btn small" id="reel-play">&#9654; Play</button>
+    <button type="button" class="btn small" id="reel-prev">&#9668;</button>
+    <button type="button" class="btn small" id="reel-next">&#9658;</button>
+    <input type="range" id="reel-slider" min="0" max="{{ frames|length|add:'-1' }}" value="0">
+    <select id="reel-speed">
+      <option value="2">2 fps</option>
+      <option value="4" selected>4 fps</option>
+      <option value="8">8 fps</option>
+      <option value="16">16 fps</option>
+    </select>
+    <span class="mono" id="reel-time">+0.00s</span>
+  </div>
+</div>
+{% endif %}
+
+{% if timings %}
+<div class="card steps-card">
+  <h2>Step timings <span class="sub">{% if timings_synced %}follows the replay &mdash; click a step to see it there{% else %}every page action is timed automatically{% endif %}</span></h2>
+  <div class="steps-scroll" id="steps-scroll">
+  <table class="data steps{% if timings_synced %} synced{% endif %}" id="step-timings">
+    <thead><tr><th class="num">at</th><th>step</th><th class="num">took</th></tr></thead>
+    <tbody>
+    {% for t in timings %}
+      <tr data-start="{{ t.start|unlocalize }}" data-end="{{ t.end|unlocalize }}"{% if t.is_block %} data-block="1" class="block"{% endif %}{% if timings_synced %} tabindex="0" title="Show this step in the replay"{% endif %}>
+        <td class="num mono">{{ t.start|at }}</td>
+        <td class="mono step-name">{% if t.is_block %}&#9201; {% endif %}{{ t.name }}</td>
+        <td class="num">{{ t.ms|ms_short }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if run.test.test_type == 'ts' %}
+  <p class="help">Times are when each step began, on the replay's clock. Add your own phases with
+    <code>await test.step('label', async () =&gt; { &hellip; })</code>{% if not timings_synced and frames %} &middot;
+    this run kept no step start times (they come from its trace), so its steps are listed but not synced
+    to the replay{% endif %}.</p>
+  {% else %}
+  <p class="help">Times are when each step began, on the replay's clock. Add your own phases with
+    <code>with ctx.timed("label"):</code>.</p>
+  {% endif %}
+</div>
+{% endif %}
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <h2>Screenshots</h2>
+    {% if art.screenshots or art.failure %}
+    <div class="shots">
+      {% for s in art.screenshots %}
+      <figure><a href="{% url 'artifact' art.base|add:'/screenshots/'|add:s %}" target="_blank">
+        <img src="{% url 'artifact' art.base|add:'/screenshots/'|add:s %}" alt="{{ s }}"></a>
+        <figcaption>{{ s }}</figcaption></figure>
+      {% endfor %}
+      {% if art.failure %}
+      <figure><a href="{% url 'artifact' art.base|add:'/failure.png' %}" target="_blank">
+        <img src="{% url 'artifact' art.base|add:'/failure.png' %}" alt="state at failure"></a>
+        <figcaption>state at failure</figcaption></figure>
+      {% endif %}
+    </div>
+    {% else %}<div class="empty">No screenshots (use ctx.screenshot("name") in the test).</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Artifacts</h2>
+    <table class="data">
+      <tr><td>Run log</td><td><a href="{% url 'artifact' art.base|add:'/run.log' %}" target="_blank">run.log</a></td></tr>
+      {% if art.trace %}<tr><td>Playwright trace</td>
+        <td><a href="{% url 'artifact' art.base|add:'/trace.zip' %}">trace.zip</a>
+            <span class="help">open with: <code>playwright show-trace trace.zip</code></span></td></tr>{% endif %}
+      {% if art.video %}<tr><td>Video</td><td><a href="{% url 'artifact' art.base|add:'/video.webm' %}">video.webm</a></td></tr>{% endif %}
+      {% if art.result_json %}<tr><td>Result JSON</td><td><a href="{% url 'artifact' art.base|add:'/result.json' %}" target="_blank">result.json</a></td></tr>{% endif %}
+      {% for f in art.saved %}<tr class="saved-file"><td>{% if forloop.first %}Saved by the test{% endif %}</td>
+        <td><a href="{% url 'artifact' art.base|add:'/'|add:f.name %}" target="_blank">{{ f.name }}</a>{% if f.size is not None %} <span class="help">{{ f.size|filesizeformat }}</span>{% endif %}</td></tr>{% endfor %}
+      <tr><td>Folder</td><td><code>results/{{ art.base }}/</code></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Full log</h2>
+  {% if art.log_remote and log_text %}<p class="help">Read from the S3 bucket (the last 20 KB; the whole file is the Run log link above).</p>{% endif %}
+  <pre class="log">{% if log_text %}{{ log_text }}{% elif art.log_remote %}(this run's log is in the S3 bucket and could not be read just now -- open it with the Run log link above){% else %}(no log){% endif %}</pre>
+</div>
+
+{% if security_findings %}
+<div class="card">
+  <h2>Security observations <span class="sub">what the browser noticed while this ran — not a penetration test</span></h2>
+  <table class="data">
+    <thead><tr><th>Severity</th><th>Finding</th><th>What to do</th></tr></thead>
+    <tbody>
+    {% for f in security_findings %}
+      <tr>
+        <td><span class="badge {% if f.severity == 'high' %}failed{% elif f.severity == 'medium' %}timeout{% elif f.severity == 'low' %}running{% else %}passed{% endif %}">{{ f.severity }}</span></td>
+        <td><strong>{{ f.title }}</strong><div class="help">{{ f.detail }}</div></td>
+        <td class="help">{{ f.fix }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="help">All of these appear together on the
+     <a href="{% url 'security_page' %}">Security</a> page.</p>
+</div>
+{% endif %}
+
+{% endif %}
+</div>
+{% endblock %}

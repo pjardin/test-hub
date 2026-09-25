@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-001",
+  "name": "Homepage loads",
+  "description": "Navigate to the target URL, check the title and that JavaScript executes.",
+  "tags": ["smoke", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

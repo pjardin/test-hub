@@ -1,0 +1,22 @@
+<article class="dock-card{% if a.hazardous %} hazardous{% endif %}{% if a.heavy %} heavy{% endif %}" draggable="true"
+         title="{{ a.customer }}, from {{ a.origin }} -- {{ a.weight_kg|floatformat:'0g' }} kg, expected {{ a.eta }}"
+         data-arrival="{{ a.id }}" data-hazardous="{{ a.hazardous|yesno:'1,0' }}" data-heavy="{{ a.heavy|yesno:'1,0' }}">
+  <header><strong>{{ a.id }}</strong>
+    {% if a.hazardous %}<span class="tag hazmat">HAZMAT</span>{% endif %}
+    {% if a.heavy %}<span class="tag heavy">HEAVY</span>{% endif %}</header>
+  <p class="who">{{ a.customer }} &middot; from {{ a.origin }}</p>
+  <p class="muted">{{ a.weight_kg|floatformat:"0g" }} kg &middot; {{ a.pieces }} pcs &middot; expected {{ a.eta }}</p>
+  {% if placed %}
+  <form method="post" class="card-form">{% csrf_token %}
+    <input type="hidden" name="action" value="unassign"><input type="hidden" name="arrival" value="{{ a.id }}">
+    <button class="btn link small" type="submit" aria-label="Send {{ a.id }} back to the arrivals">Remove</button>
+  </form>
+  {% else %}
+  <form method="post" class="card-form">{% csrf_token %}
+    <input type="hidden" name="action" value="assign"><input type="hidden" name="arrival" value="{{ a.id }}">
+    <label class="sr-only" for="cell-{{ a.id }}">Door and hour for {{ a.id }}</label>
+    <select id="cell-{{ a.id }}" name="cell">{% for key, label in cells %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select>
+    <button class="btn small" type="submit">Assign</button>
+  </form>
+  {% endif %}
+</article>

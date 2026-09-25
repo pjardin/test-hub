@@ -1,0 +1,69 @@
+{% extends "freight/base.html" %}
+{% block title %}Quote: review{% endblock %}
+{% block content %}
+<h1>Get a quote</h1>
+{% include "freight/_stepper.html" %}
+<div class="review-grid">
+  <section class="panel" aria-labelledby="summary-title">
+    <h2 id="summary-title">Your shipment</h2>
+    <dl class="facts" id="quote-summary">
+      <dt>From</dt><dd id="summary-origin">{{ q.origin }}</dd>
+      <dt>To</dt><dd id="summary-destination">{{ q.destination }}</dd>
+      <dt>Cargo</dt><dd>{{ q.weight_kg }} kg, {{ q.pieces }} piece{{ q.pieces|pluralize }}{% if q.hazardous %}, hazardous{% endif %}{% if q.description %} &mdash; {{ q.description }}{% endif %}</dd>
+      {% if customs %}<dt>Customs</dt><dd>{{ customs.category|capfirst }}, declared ${{ customs.declared_value }} ({{ customs.incoterm }})</dd>{% endif %}
+      <dt>Service</dt><dd id="summary-service">{{ service_label }}</dd>
+      <dt>Distance</dt><dd>{{ quote.distance_km }} km billable</dd>
+    </dl>
+    <p><a href="{% url 'freight:quote_route' %}">Change the route</a> &middot; <a href="{% url 'freight:quote_service' %}">Change the service</a></p>
+  </section>
+
+  <section class="panel" aria-labelledby="price-title">
+    <h2 id="price-title">Price</h2>
+    <table class="price-table" id="price-table">
+      <tbody>
+        {% for line in lines %}<tr><td>{{ line.label }}</td><td class="num">{{ line.amount }}</td></tr>{% endfor %}
+        <tr class="subtotal"><td>Subtotal</td><td class="num" id="price-subtotal" data-amount="{{ quote.subtotal }}">{{ amounts.subtotal }}</td></tr>
+        {% if quote.promo %}<tr class="discount"><td>Promo {{ quote.promo }}</td><td class="num" id="price-discount" data-amount="{{ quote.discount }}">-{{ amounts.discount }}</td></tr>{% endif %}
+        <tr><td>Fuel surcharge (8.5%)</td><td class="num" id="price-fuel" data-amount="{{ quote.fuel }}">{{ amounts.fuel }}</td></tr>
+        <tr class="total"><td>Total (USD)</td><td class="num" id="price-total" data-amount="{{ quote.total }}">{{ amounts.total }}</td></tr>
+      </tbody>
+    </table>
+
+    {% if quote.promo %}
+      <form method="post" class="promo-applied">{% csrf_token %}
+        <input type="hidden" name="action" value="remove-promo">
+        <span class="badge ok">{{ quote.promo }} applied</span>
+        <button class="btn link" type="submit" id="remove-promo">Remove</button>
+      </form>
+    {% else %}
+      <form method="post" class="promo-form" id="promo-form">{% csrf_token %}
+        <input type="hidden" name="action" value="promo">
+        <label for="promo-code">Promo code</label>
+        <div class="inline">
+          <input id="promo-code" name="promo" autocomplete="off" placeholder="SPRING10">
+          <button class="btn" type="submit" id="apply-promo">Apply</button>
+        </div>
+        {% if errors.promo %}<p class="error" id="promo-error" role="alert">{{ errors.promo }}</p>{% endif %}
+      </form>
+    {% endif %}
+  </section>
+</div>
+
+<form method="post" class="panel form" id="book-form" novalidate>{% csrf_token %}
+  <input type="hidden" name="action" value="book">
+  <h2>Book it</h2>
+  <div class="row">
+    <div class="field{% if errors.contact_name %} has-error{% endif %}">
+      <label for="contact-name">Contact name</label>
+      <input id="contact-name" name="contact_name" value="{{ contact.name }}" autocomplete="name">
+      {% if errors.contact_name %}<p class="error">{{ errors.contact_name }}</p>{% endif %}
+    </div>
+    <div class="field{% if errors.contact_email %} has-error{% endif %}">
+      <label for="contact-email">Email</label>
+      <input id="contact-email" name="contact_email" type="email" value="{{ contact.email }}" autocomplete="email">
+      {% if errors.contact_email %}<p class="error">{{ errors.contact_email }}</p>{% endif %}
+    </div>
+  </div>
+  <div class="actions"><button class="btn cta" type="submit" id="book-btn">Book shipment</button></div>
+</form>
+{% endblock %}

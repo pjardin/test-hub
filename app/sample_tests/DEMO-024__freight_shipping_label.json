@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-024",
+  "name": "Freight: shipping label -- new tab, barcode, PDF",
+  "description": "Opens the label (a new tab, caught with expect_popup), decodes its Code 128 barcode from the bars with the test's own decoder, downloads the PDF and reads the barcode out of it too.",
+  "tags": ["freight", "popup", "barcode", "download", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

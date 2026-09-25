@@ -1,0 +1,311 @@
+{% extends "core/base.html" %}
+{% block title %}Settings — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Settings</h1>
+  <span class="help">Test Hub v{{ app_version }}</span>
+  <div class="spacer"></div>
+  <button class="btn" data-rescan>&#8635; Rescan tests folder</button>
+</div>
+
+<div class="card">
+  <h2>System check <span class="sub">is this machine healthy? — the same checks as
+    <code>testhub doctor</code> on the command line</span>
+    <button class="btn small" id="doctor-full" style="float:right">Re-check including a browser launch</button></h2>
+  <div class="table-scroll">
+  <table class="data" id="doctor-table">
+    <tbody>
+    {% for c in checks %}
+      <tr>
+        <td style="width:130px"><span class="badge {% if c.status == 'ok' %}passed{% elif c.status == 'warn' %}timeout{% else %}failed{% endif %}">{{ c.status }}</span></td>
+        <td style="width:180px"><strong>{{ c.name }}</strong></td>
+        <td>{{ c.detail }}{% if c.fix %}<div class="help">&rarr; {{ c.fix }}</div>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>This machine's config <span class="sub">{{ config_path }}</span></h2>
+    <form method="post">
+      {% csrf_token %}
+      <h2>Target under test</h2>
+      <label class="field"><span>Name</span>
+        <input type="text" name="target_name" value="{{ cfg.target_name }}"></label>
+      <label class="field"><span>URL — the website Playwright drives (empty = this hub's built-in /demo/ page)</span>
+        <input type="url" name="target_url" value="{% if not cfg.target_is_demo %}{{ cfg.target_url }}{% endif %}"
+               placeholder="https://your-app.internal/"></label>
+      <label class="field"><span>Current version of the target — recorded on every run, powers the per-version charts</span>
+        <input type="text" name="target_version" value="{{ cfg.configured_target_version }}"></label>
+      {% if cfg.target_is_demo %}
+      <p class="muted">While the URL is empty the hub tests its built-in demo site, which reports its OWN version
+        (now <strong>{{ cfg.target_version }}</strong>) &mdash; switch it in the demo's
+        <a href="{% url 'freight:releases' %}">Release console</a>. This field applies once you point the hub at your own site.</p>
+      {% endif %}
+
+      <hr class="soft">
+      <h2>Runner</h2>
+      <div class="field-row">
+        <label class="field"><span>Browser</span>
+          <select name="browser">
+            {% for b in browsers %}<option value="{{ b }}" {% if b == cfg.browser %}selected{% endif %}>{{ b }}</option>{% endfor %}
+          </select></label>
+        <label class="field"><span>Parallel workers (restart to apply)</span>
+          <input type="number" name="max_parallel" min="1" max="16" value="{{ cfg.max_parallel }}"></label>
+      </div>
+      <label class="checkbox"><input type="checkbox" name="headed" {% if cfg.headed %}checked{% endif %}>
+        headed (browser windows visible — needs a display or xvfb on the hub machine)</label>
+
+      <hr class="soft">
+      <h2>What to record <span class="sub">each one costs disk on every run — turn off what you do not need</span></h2>
+      <label class="checkbox"><input type="checkbox" name="video" {% if cfg.video %}checked{% endif %}>
+        <strong>Video</strong> of each run <span class="help">(biggest item: ~1–5 MB per minute)</span></label><br>
+      <label class="checkbox"><input type="checkbox" name="activity_frames" {% if cfg.activity_frames %}checked{% endif %}>
+        <strong>Screenshots for the activity replay</strong> <span class="help">(~30–60 KB per captured frame; idle time costs nothing)</span></label><br>
+      <label class="checkbox"><input type="checkbox" name="trace" {% if cfg.trace %}checked{% endif %}>
+        <strong>Playwright trace</strong> <span class="help">(~0.5–3 MB per run; the deep-debug artifact)</span></label><br>
+      <label class="checkbox"><input type="checkbox" name="keep_awake" {% if cfg.keep_awake %}checked{% endif %}>
+        <strong>Keep this machine awake while tests run</strong>
+        <span class="help">(holds a sleep inhibitor; a machine that suspends at
+        01:50 misses the 02:00 schedule and it looks like a broken scheduler.
+        Released as soon as nothing is running. Check with
+        <code>caffeinate --status</code>)</span></label><br>
+      <label class="checkbox"><input type="checkbox" name="security_checks" {% if cfg.security_checks %}checked{% endif %}>
+        <strong>Watch security configuration during runs</strong>
+        <span class="help">(headers, cookie flags and requests to other hosts —
+        costs nothing, see the Security page)</span></label><br>
+      <label class="checkbox"><input type="checkbox" name="live_screenshots" {% if cfg.live_screenshots %}checked{% endif %}>
+        <strong>Live view while running</strong> <span class="help">(one small file, overwritten — negligible)</span></label>
+      <p class="help">Your own <code>ctx.screenshot("name")</code> calls inside tests are
+      always saved; these switches control what the hub records automatically.</p>
+
+      <hr class="soft">
+      <h2>Scheduler</h2>
+      <label class="field"><span>Timezone for weekly schedules (restart to apply)</span>
+        <input type="text" name="timezone" value="{{ cfg.timezone }}" placeholder="America/Los_Angeles"></label>
+
+      <hr class="soft">
+      <h2>Maintenance</h2>
+      <label class="field"><span>Auto-prune run artifacts older than N days at startup (0 = never; database history and all charts are always kept)</span>
+        <input type="number" name="retention_days" min="0" value="{{ cfg.retention_days }}"></label>
+
+      <button class="btn primary" type="submit">Save config.json</button>
+    </form>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>Where things live</h2>
+      <table class="data">
+        <tr><td>Hub URL (site.host / site.port)</td><td><code>{{ cfg_public_url }}</code></td></tr>
+        <tr><td>Target under test</td><td><code>{{ cfg.target_url }}</code></td></tr>
+        <tr><td>Data directory</td><td><code>{{ cfg.data_dir }}</code></td></tr>
+        <tr><td>Tests folder (source of truth)</td><td><code>{{ cfg.tests_dir }}</code></td></tr>
+        <tr><td>Results / artifacts</td><td><code>{{ cfg.results_dir }}</code></td></tr>
+        <tr><td>Database</td><td><code>{{ cfg.data_dir }}/db.sqlite3</code></td></tr>
+      </table>
+      <p class="help">To point this hub at a different machine's target (local vs
+      office network vs AWS), edit <strong>target.url</strong> above — nothing else
+      changes. To move the hub itself, copy the data directory and start
+      <code>manage.py serve</code> there.</p>
+    </div>
+
+    <div class="card">
+      <h2>Machine clock <span class="sub">air-gapped boxes have no NTP — a wrong
+        clock fires schedules at surreal hours and scrambles run history</span></h2>
+      <table class="data">
+        <tr><td>This machine thinks it is</td>
+            <td><code id="clock-server">{{ server_now }}</code></td></tr>
+        <tr><td>Your device says</td>
+            <td><code id="clock-browser">…</code>
+                <span id="clock-delta" class="help"></span></td></tr>
+        <tr><td>Fix it</td>
+            <td><button type="button" class="btn small" data-set-clock-browser>
+                  Set this machine's clock to my device's time</button>
+                <span class="help">or pick one:</span>
+                <input type="datetime-local" id="clock-manual"
+                       style="display:inline-block; width:auto">
+                <button type="button" class="btn small" data-set-clock-manual>Set</button>
+                <span id="clock-result" class="help"></span></td></tr>
+      </table>
+      <p class="help">Needs the hub to be running as root (the systemd service
+      does). The timezone name used for schedules is separate — set it under
+      Scheduler above.</p>
+    </div>
+
+    <div class="card">
+      <h2>Disk &amp; connectivity</h2>
+      <table class="data">
+        <tr><td>Run artifacts on disk</td>
+            <td>{{ usage.bytes|filesizeformat }} across {{ usage.run_dirs }} run folder(s)</td></tr>
+        <tr><td>Target reachability</td>
+            <td><button type="button" class="btn small" data-target-check>Check target URL now</button>
+                <span id="target-check-result" class="help"></span></td></tr>
+        <tr><td>Free space now</td>
+            <td><button type="button" class="btn small danger" data-prune
+                  title="Deletes videos/traces/screenshots of runs older than the entered days; the database history and every chart stay intact">
+                  Prune artifacts older than</button>
+                <input type="number" id="prune-days" value="30" min="1"
+                       style="width:70px; display:inline-block"> days
+                <span id="prune-result" class="help"></span></td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Free up space <span class="sub">deleting artifacts keeps every chart —
+        only the videos/screenshots/traces go</span></h2>
+      <table class="data">
+        <tr><td><strong>Delete artifacts, keep history</strong>
+                <div class="help">reclaims essentially all the space; pass rates, durations and timings survive</div></td>
+            <td>
+              keep newest <input type="number" id="purge-keep" value="5" min="0" style="width:60px"> run(s) per test
+              <button type="button" class="btn small danger" data-purge-all>Delete older artifacts</button>
+            </td></tr>
+        <tr><td><strong>Delete only passed runs' artifacts</strong>
+                <div class="help">failures are usually the ones worth keeping</div></td>
+            <td><button type="button" class="btn small danger" data-purge-all data-status="passed">Delete passed artifacts</button></td></tr>
+        <tr><td><strong>Delete run history too</strong>
+                <div class="help">removes the rows as well — charts lose those runs</div></td>
+            <td><button type="button" class="btn small danger" data-purge-all data-whole>Delete runs entirely</button></td></tr>
+      </table>
+      <p class="help">Per-test and per-run delete buttons live on those pages.
+      Automatic cleanup: set <em>retention days</em> above.</p>
+    </div>
+
+    <div class="card">
+      <h2>Artifact storage <span class="sub">where videos/traces/screenshots live</span></h2>
+      <p class="help">Local disk is the default and the only option offline. On AWS
+      you can push finished runs to a bucket and (optionally) drop the local copy —
+      the database always stays local. Credentials come from the instance role or
+      the environment, never from config.json.</p>
+      <div class="field-row">
+        <label class="field"><span>Backend</span>
+          <select name="storage_backend">
+            <option value="local" {% if cfg.storage_backend == 'local' %}selected{% endif %}>local disk</option>
+            <option value="s3" {% if cfg.storage_backend == 's3' %}selected{% endif %}>S3 bucket</option>
+          </select></label>
+        <label class="field"><span>Bucket</span>
+          <input type="text" name="s3_bucket" value="{{ cfg.s3_bucket }}" placeholder="my-testhub-artifacts"></label>
+      </div>
+      <div class="field-row">
+        <label class="field"><span>Prefix</span>
+          <input type="text" name="s3_prefix" value="{{ cfg.s3_prefix }}" placeholder="testhub"></label>
+        <label class="field"><span>Region</span>
+          <input type="text" name="s3_region" value="{{ cfg.s3_region }}" placeholder="us-east-1"></label>
+        <label class="field"><span>Endpoint (S3-compatible only)</span>
+          <input type="text" name="s3_endpoint" value="{{ cfg.s3_endpoint }}" placeholder=""></label>
+      </div>
+      <label class="checkbox"><input type="checkbox" name="s3_delete_local" {% if cfg.s3_delete_local %}checked{% endif %}>
+        delete the local copy after a successful upload (that is the point — it frees the disk)</label>
+      <p>
+        <button type="button" class="btn small" data-storage-check>Test the bucket</button>
+        <button type="button" class="btn small" data-storage-offload>Upload existing artifacts now</button>
+        <span id="storage-result" class="help"></span>
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Backup &amp; transfer <span class="sub">upgrades are painful here — take a backup first</span></h2>
+      <table class="data">
+        <tr>
+          <td><strong>Backup everything</strong><div class="help">tests + run history + config, as one zip</div></td>
+          <td><a class="btn small" href="{% url 'backup_download' %}">&#11015; Download backup</a>
+              <div class="help">restore with: <code>testhub restore &lt;file&gt;</code></div></td>
+        </tr>
+        <tr>
+          <td><strong>Export tests</strong><div class="help">test definitions only — the format to carry between machines</div></td>
+          <td><a class="btn small" href="{% url 'tests_export' %}">&#11015; Download tests</a></td>
+        </tr>
+        <tr>
+          <td><strong>Import tests</strong><div class="help">upload a tests zip from another machine; run history here is never touched</div></td>
+          <td>
+            <form method="post" action="{% url 'tests_import' %}" enctype="multipart/form-data">
+              {% csrf_token %}
+              <input type="file" name="file" accept=".zip" required style="max-width:190px">
+              <button class="btn small primary" type="submit">Import</button>
+            </form>
+          </td>
+        </tr>
+      </table>
+      <p class="help">A safety backup is taken automatically before an import or a
+      restore, and anything replaced is moved aside — never deleted.</p>
+    </div>
+
+    <div class="card">
+      <h2>Archived tests</h2>
+      {% for t in archived %}
+        <form method="post" class="run-row">{% csrf_token %}
+          <input type="hidden" name="action" value="restore">
+          <input type="hidden" name="test_id" value="{{ t.test_id }}">
+          <div class="grow">
+            <a href="{% url 'test_detail' t.test_id %}">{{ t.test_id }}</a> {{ t.display_name }}
+            <div class="meta">file was {{ t.file_path }} (now in tests/_archive/)</div>
+          </div>
+          <button class="btn small" type="submit">Restore</button>
+        </form>
+      {% empty %}<div class="empty">Nothing archived.</div>{% endfor %}
+    </div>
+  </div>
+</div>
+
+
+<div class="card">
+  <h2>Credentials <span class="sub">for tests that have to log in</span></h2>
+  <p class="help">
+    Test files travel — laptop, zip, disc, git. A password written into one
+    travels with it. So credentials live <strong>only on this machine</strong>
+    in a 0600 file, and a test refers to them <strong>by name</strong>:
+    <code>ctx.secret("target_password")</code>. Move the test anywhere and it
+    works as soon as that machine has its own value for the name — which is
+    also right, because the lab password should not be the laptop password.
+  </p>
+  <p class="help">Values are never shown again after saving, never included in
+     a backup or a tests export, and are <strong>redacted from run logs,
+     error messages and results</strong> even if a test prints one by accident.</p>
+
+  {% if secrets_loose %}
+    <div class="msg error">The credentials file is readable by other users on
+      this machine. It will be tightened automatically on the next run —
+      or fix it now: <code>chmod 600 data/secrets.json</code></div>
+  {% endif %}
+
+  <table class="data">
+    <thead><tr><th>Name</th><th>Use it as</th><th></th></tr></thead>
+    <tbody>
+    {% for name in secret_names %}
+      <tr>
+        <td><strong>{{ name }}</strong></td>
+        <td><code>ctx.secret("{{ name }}")</code></td>
+        <td>
+          <form method="post" style="margin:0">{% csrf_token %}
+            <input type="hidden" name="action" value="secret-delete">
+            <input type="hidden" name="secret_name" value="{{ name }}">
+            <button class="btn small danger" type="submit"
+                    onclick="return confirm('Remove {{ name }}? Any test using it will fail until it is set again.')">Remove</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="3"><div class="empty">No credentials stored on this machine.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <form method="post" style="margin-top:14px">{% csrf_token %}
+    <input type="hidden" name="action" value="secret-set">
+    <div class="grid-2">
+      <label class="field"><span>Name</span>
+        <input type="text" name="secret_name" placeholder="target_password"
+               pattern="[A-Za-z0-9_.-]{1,64}" required></label>
+      <label class="field"><span>Value</span>
+        <input type="password" name="secret_value" autocomplete="new-password" required></label>
+    </div>
+    <button class="btn primary" type="submit">Save credential</button>
+  </form>
+</div>
+
+{% endblock %}

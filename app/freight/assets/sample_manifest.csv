@@ -1,0 +1,41 @@
+reference,origin,destination,weight_kg,pieces,service,hazardous
+PO-24031,"Raleigh, US","Baltimore, US",37.7,9,economy,no
+PO-24032,"Fresno, US","Boston, US",100.0,2,express,no
+PO-24033,"Houston, US","Oakland, US",14.9,10,economy,no
+PO-24034,"Laredo, US","Fresno, US",229.2,7,economy,no
+PO-24035,"Dallas, US","Syracuse, US",97.4,3,economy,no
+PO-24036,"Syracuse, US",Springfeld,61.1,10,standard,no
+PO-24037,"San Francisco, US","Stockton, US",94.8,10,standard,yes
+PO-24038,"Modesto, US","Arlington, US",38.0,10,express,no
+PO-24039,"Providence, US","Virginia Beach, US",202.3,4,economy,no
+PO-24040,"Stamford, US","New Orleans, US",16.2,6,standard,yes
+PO-24041,"Tulsa, US","Dallas, US",68.4,6,standard,no
+PO-24042,"Harrisburg, US","New Orleans, US",-12,2,standard,yes
+PO-24043,"Worcester, US","Salem, US",22.3,11,express,no
+PO-24044,"Corpus Christi, US","Charlotte, US",111.6,8,standard,no
+PO-24045,"Berkeley, US","Irvine, US",44.1,5,standard,no
+PO-24046,"Jacksonville, US","Fayetteville, US",44.4,7,standard,no
+PO-24047,"Poughkeepsie, US","Richmond, US",97.4,7,standard,no
+PO-24033,"Sacramento, US","Baltimore, US",83.5,5,economy,no
+PO-24049,"Tulsa, US","Arlington, US",28.1,3,economy,yes
+PO-24050,"Fayetteville, US","Santa Barbara, US",52.0,7,economy,yes
+PO-24051,"Springfield, US","Salt Lake City, US",26.1,6,economy,no
+PO-24052,"New York, US","Pasadena, US",36.0,4,express,no
+PO-24053,"Springfield, US","San Antonio, US",42.7,8,standard,yes
+PO-24054,"Oklahoma City, US","Columbus, US",32.1,12,standard,no
+PO-24055,"San Bernardino, US",,22.5,1,standard,no
+PO-24056,"Worcester, US","Salinas, US",25.0,3,standard,no
+PO-24057,"Arlington, US","Lowell, US",85.0,4,standard,no
+PO-24058,"Poughkeepsie, US","Salt Lake City, US",72.2,9,express,no
+PO-24059,"Santa Rosa, US","Miami, US",42.4,10,standard,yes
+PO-24060,"Waterbury, US","Shreveport, US",34.2,4,express,no
+PO-24061,"Birmingham, US","San Bernardino, US",7.3,10,economy,yes
+PO-24062,"Trenton, US","Mesa, US",74.1,11,express,yes
+PO-24063,"Brownsville, US","Corpus Christi, US",93.7,3,express,no
+PO-24064,"Phoenix, US","Denton, US",35.8,2,standard,no
+PO-24065,"Minneapolis, US","Miami, US",77.8,10,express,no
+PO-24066,"Baltimore, US","Stockton, US",48.2,12,economy,no
+PO-24067,"Richmond, US","Fayetteville, US",45.0,6,standard,no
+PO-24068,"Wilmington, US","Minneapolis, US",275.7,9,express,no
+PO-24069,"Arlington, US","Baltimore, US",46.4,8,standard,no
+PO-24070,"Santa Barbara, US","Denton, US",23.8,10,economy,no

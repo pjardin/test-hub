@@ -1,0 +1,109 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% block title %}Analytics — Test Hub{% endblock %}
+{% block content %}
+<h1>Analytics</h1>
+<div data-live="analytics">
+
+<div class="card">
+  <h2>Website versions <span class="sub">every version this hub has ever tested,
+    oldest first — a run is stamped with the version at the moment it ran</span></h2>
+  {% if summary %}
+  <div style="overflow-x:auto">
+  <table class="data">
+    <tr><th>website version</th><th>tests</th><th>runs</th><th>passed</th>
+        <th>failed</th><th>other</th><th>pass rate</th><th>median duration</th>
+        <th>first run</th><th>last run</th></tr>
+    {% for s in summary %}
+    <tr {% if s.version == current_version %}style="font-weight:600"{% endif %}>
+      <td>{{ s.version }}{% if s.version == current_version %} <span class="badge running">current</span>{% endif %}</td>
+      <td>{{ s.tests }}</td><td>{{ s.runs }}</td>
+      <td>{{ s.passed }}</td><td>{{ s.failed }}</td><td>{{ s.other }}</td>
+      <td>{% if s.pass_rate != None %}{{ s.pass_rate }}%{% else %}—{% endif %}</td>
+      <td>{% if s.median_s != None %}{{ s.median_s|duration }}{% else %}—{% endif %}</td>
+      <td class="help">{{ s.first_run|date:"Y-m-d H:i" }}</td>
+      <td class="help">{{ s.last_run|date:"Y-m-d H:i" }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% else %}
+  <div class="empty">No finished runs yet. Set <strong>target.version</strong> in
+  Settings, run some tests, and every run is stamped with it from then on.</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Every test × every version <span class="sub">pass rate · median duration —
+    a version that broke or slowed ONE test shows up here instead of averaging away</span></h2>
+  {% if matrix_rows %}
+  <div style="overflow-x:auto">
+  <table class="data">
+    <tr><th>test</th>{% for v in versions %}<th>{{ v }}</th>{% endfor %}</tr>
+    {% for row in matrix_rows %}
+    <tr>
+      <td><a href="{% url 'test_detail' row.test.test_id %}"><strong>{{ row.test.test_id }}</strong></a>
+          <span class="help">{{ row.test.name }}</span></td>
+      {% for cell in row.cells %}
+      <td>{% if cell %}
+            {% if cell.pass_rate == 100.0 %}<span class="badge passed">{{ cell.pass_rate }}%</span>
+            {% elif cell.pass_rate != None %}<span class="badge failed">{{ cell.pass_rate }}%</span>
+            {% endif %}
+            {% if cell.median_s != None %}<span class="help">{{ cell.median_s|duration }}</span>{% endif %}
+            <span class="help">({{ cell.runs }})</span>
+          {% else %}<span class="help">—</span>{% endif %}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% else %}
+  <div class="empty">Nothing to compare yet.</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Speed trend <span class="sub">
+    {% if trend %}median duration on {{ trend_pair.1 }} vs {{ trend_pair.0 }} —
+      positive means the newer version is SLOWER{% else %}needs runs on at least
+      two website versions{% endif %}</span></h2>
+  {% if trend %}
+  <div style="overflow-x:auto">
+  <table class="data">
+    <tr><th>test</th><th>{{ trend_pair.0 }}</th><th>{{ trend_pair.1 }}</th>
+        <th>delta</th><th>%</th><th></th></tr>
+    {% for r in trend %}
+    <tr>
+      <td><a href="{% url 'test_detail' r.test.test_id %}"><strong>{{ r.test.test_id }}</strong></a>
+          <span class="help">{{ r.test.name }}</span></td>
+      <td>{{ r.previous_median|duration }}</td>
+      <td>{{ r.current_median|duration }}</td>
+      <td>{% if r.delta_s > 0 %}+{% endif %}{{ r.delta_s }}s</td>
+      <td>{% if r.delta_pct != None %}{% if r.delta_pct > 0 %}+{% endif %}{{ r.delta_pct }}%{% else %}—{% endif %}</td>
+      <td>{% if r.direction == "slower" %}<span class="badge failed">&#9650; slower</span>
+          {% elif r.direction == "faster" %}<span class="badge passed">&#9660; faster</span>
+          {% else %}<span class="badge queued">same</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Copy as CSV <span class="sub">no files, no images — each block below is
+    plain CSV text. Copy it, paste it into your chat tool, and save the paste
+    as the suggested filename on the other side</span></h2>
+  {% for sec in sections %}
+  <div class="csv-section">
+    <h3>{{ sec.title }}
+        <button type="button" class="btn small" data-copy="csv-{{ sec.slug }}">Copy</button>
+        <span class="help">save as <code>{{ sec.filename }}</code></span></h3>
+    <p class="help">{{ sec.note }}</p>
+    <textarea id="csv-{{ sec.slug }}" class="csv-text" readonly rows="6"
+              spellcheck="false">{{ sec.text }}</textarea>
+  </div>
+  {% endfor %}
+</div>
+</div>
+{% endblock %}

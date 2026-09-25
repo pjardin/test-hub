@@ -1,0 +1,51 @@
+{% extends "freight/base.html" %}
+{% block title %}System status{% endblock %}
+{% block content %}
+<h1>System status</h1>
+<div class="status-banner status-{{ s.state }}" id="status-banner" data-state="{{ s.state }}" role="status">
+  <strong id="status-headline">{{ s.headline }}</strong>
+  {% if s.since %}<span class="since">since {{ s.since|date:"M j, H:i" }}</span>{% endif %}
+</div>
+
+<section class="panel" aria-labelledby="components-title">
+  <h2 id="components-title">Components</h2>
+  <ul class="components" id="components">
+    {% for c in s.components %}
+    <li data-component="{{ c.key }}" data-state="{{ c.state }}">
+      <span class="dot dot-{{ c.state }}" aria-hidden="true"></span>
+      <span class="what"><strong>{{ c.name }}</strong> <span class="muted">{{ c.what }}</span></span>
+      <span class="state">{{ c.label }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="panel" aria-labelledby="uptime-title">
+  <h2 id="uptime-title">Uptime, last 30 days{% if s.uptime is not None %}: <span id="uptime">{{ s.uptime }}%</span>{% endif %}</h2>
+  <ol class="uptime-bars" id="uptime-bars">
+    {% for d in s.days %}<li class="day day-{{ d.state }}" title="{{ d.label }}"><span class="sr-only">{{ d.label }}</span></li>{% endfor %}
+  </ol>
+  <p class="muted">Counted from the simulated incidents in the Release console&rsquo;s history (its last 50 events).
+    Days before the first recorded event show no data rather than an invented 100%.</p>
+</section>
+
+<section class="panel" aria-labelledby="incidents-title">
+  <h2 id="incidents-title">Past incidents</h2>
+  {% if s.incidents %}
+  <ul class="incidents" id="incidents">
+    {% for i in s.incidents %}
+    <li data-kind="{{ i.kind }}"{% if not i.end %} data-ongoing="1"{% endif %}>
+      <span class="dot dot-{{ i.state }}" aria-hidden="true"></span>
+      <strong>{% if i.kind == "outage" %}Outage{% else %}Degraded performance{% endif %}</strong>
+      on release {{ i.version }} &middot; {{ i.start|date:"M j, H:i" }}
+      &middot; {% if i.end %}{{ i.minutes }} min{% else %}ongoing{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">No incidents recorded.</p>
+  {% endif %}
+  <p class="muted">Machine-readable: <a href="{% url 'freight:status_json' %}">status.json</a>.
+    Incidents are switched in the <a href="{% url 'freight:releases' %}#incident-panel">Release console</a>.</p>
+</section>
+{% endblock %}

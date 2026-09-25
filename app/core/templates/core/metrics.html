@@ -1,0 +1,205 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% block title %}Metrics — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Metrics</h1>
+  <a class="btn small" href="{% url 'metrics_csv' %}?days={{ days }}"
+     title="The per-test table as a spreadsheet file">&#11015; CSV</a>
+  <form method="get" class="filters" style="margin:0">
+    <label class="field"><span>Window</span>
+      <select name="days" onchange="this.form.submit()">
+        <option value="7" {% if days == 7 %}selected{% endif %}>7 days</option>
+        <option value="14" {% if days == 14 %}selected{% endif %}>14 days</option>
+        <option value="30" {% if days == 30 %}selected{% endif %}>30 days</option>
+        <option value="90" {% if days == 90 %}selected{% endif %}>90 days</option>
+        <option value="180" {% if days == 180 %}selected{% endif %}>180 days</option>
+      </select></label>
+  </form>
+  <div class="spacer"></div>
+</div>
+
+<div data-live="metrics">
+<div class="tiles">
+  <div class="tile"><div class="label">Active tests</div><div class="value">{{ overview.tests }}</div></div>
+  <div class="tile"><div class="label">Runs</div><div class="value">{{ overview.runs }}</div></div>
+  <div class="tile"><div class="label">Pass rate</div>
+    <div class="value">{% if overview.pass_rate is not None %}{{ overview.pass_rate|floatformat:0 }}<small>%</small>{% else %}—{% endif %}</div>
+    <div class="hint">{{ overview.passed }} passed · {{ overview.failed }} failed</div></div>
+  <div class="tile"><div class="label">Avg duration</div>
+    <div class="value">{% if overview.avg_duration is not None %}{{ overview.avg_duration|duration }}{% else %}—{% endif %}</div>
+    <div class="hint">p95 {% if overview.p95_duration is not None %}{{ overview.p95_duration|duration }}{% else %}—{% endif %}</div></div>
+  <div class="tile"><div class="label">Total test time</div>
+    <div class="value">{{ overview.total_test_time|duration }}</div></div>
+  <div class="tile"><div class="label">Failing now</div><div class="value">{{ failing|length }}</div></div>
+</div>
+
+{% if failures.new or failures.chronic %}
+<div class="grid-2">
+  <div class="card" {% if failures.new %}style="border-left:4px solid var(--critical)"{% endif %}>
+    <h2>Started failing recently <span class="sub">first failure within {{ failures.window_days }} day(s) — look at these first</span></h2>
+    {% if failures.new %}
+    <table class="data">
+      <thead><tr><th>Test</th><th class="num">fails in a row</th><th>since</th><th>error</th></tr></thead>
+      <tbody>
+      {% for f in failures.new %}
+        <tr><td><a href="{% url 'test_detail' f.test_id %}">{{ f.test_id }}</a></td>
+            <td class="num">{{ f.streak }}</td>
+            <td>{{ f.since|date:"M j H:i" }}</td>
+            <td class="help">{{ f.error|truncatechars:60 }}
+              <a href="{% url 'run_detail' f.last_run_id %}">run</a></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="empty">Nothing new — no fresh regressions.</div>{% endif %}
+  </div>
+  <div class="card">
+    <h2>Long-standing failures <span class="sub">already failing before that window</span></h2>
+    {% if failures.chronic %}
+    <table class="data">
+      <thead><tr><th>Test</th><th class="num">fails in a row</th><th>since</th></tr></thead>
+      <tbody>
+      {% for f in failures.chronic %}
+        <tr><td><a href="{% url 'test_detail' f.test_id %}">{{ f.test_id }}</a></td>
+            <td class="num">{{ f.streak }}</td><td>{{ f.since|date:"M j" }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="empty">None.</div>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if clusters %}
+<div class="card">
+  <h2>Failures grouped by cause <span class="sub">the same message across tests usually means ONE bug, not many</span></h2>
+  <div class="table-scroll">
+  <table class="data">
+    <thead><tr><th class="num">times</th><th>what went wrong</th><th>tests affected</th><th>last seen</th><th></th></tr></thead>
+    <tbody>
+    {% for c in clusters %}
+      <tr>
+        <td class="num"><strong>{{ c.count }}</strong></td>
+        <td class="mono" style="font-size:12px">{{ c.sample|truncatechars:90 }}</td>
+        <td>{% for t in c.tests %}<a class="tag" href="{% url 'test_detail' t %}">{{ t }}</a>{% endfor %}</td>
+        <td>{{ c.last|date:"M j H:i" }}</td>
+        <td><a class="btn small" href="{% url 'run_detail' c.example_run %}">example</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <h2>Runs per day</h2>
+    {{ chart_days|json_script:"m-days" }}
+    <div class="chart-box"><canvas data-chart="days" data-src="m-days"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>Pass rate per day</h2>
+    <div class="chart-box"><canvas data-chart="passrate" data-src="m-days"></canvas></div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>Slowest tests <span class="sub">average and p95 seconds</span></h2>
+    {{ chart_slowest|json_script:"m-slowest" }}
+    <div class="chart-box tall"><canvas data-chart="slowest" data-src="m-slowest"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>Flakiest tests <span class="sub">how often adjacent runs flip pass&harr;fail</span></h2>
+    {{ chart_flakiest|json_script:"m-flakiest" }}
+    <div class="chart-box tall"><canvas data-chart="flakiest" data-src="m-flakiest"></canvas></div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>Outcomes by target version</h2>
+    {{ chart_versions|json_script:"m-versions" }}
+    <div class="chart-box"><canvas data-chart="versions" data-src="m-versions"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>What starts the runs</h2>
+    {{ chart_triggers|json_script:"m-triggers" }}
+    <div class="chart-box"><canvas data-chart="triggers" data-src="m-triggers"></canvas></div>
+  </div>
+</div>
+
+{% if chart_steps %}
+<div class="card">
+  <h2>Slowest individual steps <span class="sub">across every test — where the time actually goes</span></h2>
+  {{ chart_steps|json_script:"m-steps" }}
+  <div class="chart-box tall"><canvas data-chart="steps" data-src="m-steps"></canvas></div>
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <h2>When failures happen <span class="sub">last {{ heatmap.days }} days, hub timezone —
+      a stripe means an environment problem, not a test problem</span></h2>
+    {% if heatmap.worst %}
+    <div class="table-scroll">
+    <table class="data heatmap">
+      <thead><tr><th></th>{% for b in heatmap.buckets %}<th class="num">{{ b }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for row in heatmap.rows %}
+        <tr><th>{{ row.day }}</th>
+          {% for c in row.cells %}
+          <td class="num" title="{{ c.fails }} failed of {{ c.runs }} run(s)"
+              style="background: rgba(208,59,59,{{ c.intensity }})">
+            {% if c.runs %}{{ c.fails }}/{{ c.runs }}{% else %}<span class="help">·</span>{% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p class="help">Cell = failures / total runs started in that slot; darker = more failures.</p>
+    {% else %}<div class="empty">No failures in this window. &#127881;</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Suite health <span class="sub">is the test set itself rotting?</span></h2>
+    <table class="data">
+      <tr><td>Active tests</td><td class="num">{{ health.total }}</td></tr>
+      <tr><td>Never run</td>
+          <td>{% if health.never_run %}{% for t in health.never_run %}<a class="tag" href="{% url 'test_detail' t %}">{{ t }}</a>{% endfor %}{% else %}<span class="help">none</span>{% endif %}</td></tr>
+      <tr><td>Not run in {{ health.stale_days }}+ days</td>
+          <td>{% if health.stale %}{% for t in health.stale %}<a class="tag" href="{% url 'test_detail' t.test_id %}">{{ t.test_id }} ({{ t.days }}d)</a>{% endfor %}{% else %}<span class="help">none</span>{% endif %}</td></tr>
+      <tr><td>Disabled</td>
+          <td>{% if health.disabled %}{% for t in health.disabled %}<a class="tag" href="{% url 'test_detail' t %}">{{ t }}</a>{% endfor %}{% else %}<span class="help">none</span>{% endif %}</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="card table-scroll">
+  <h2>Per-test summary <span class="sub">{{ days }}-day window</span>
+    <a class="btn small" href="{% url 'metrics_csv' %}?days={{ days }}" style="float:right">&#11015; CSV</a></h2>
+  <table class="data">
+    <thead><tr><th>Test</th><th class="num">Runs</th><th class="num">Pass rate</th>
+      <th class="num">Avg (s)</th><th class="num">p95 (s)</th><th class="num">Flakiness</th><th>Last</th></tr></thead>
+    <tbody>
+    {% for r in table %}
+      <tr>
+        <td><a href="{% url 'test_detail' r.test_id %}">{{ r.test_id }}</a> {{ r.name }}</td>
+        <td class="num">{{ r.runs }}</td>
+        <td class="num">{% if r.pass_rate is not None %}{{ r.pass_rate|floatformat:0 }}%{% else %}—{% endif %}</td>
+        <td class="num">{% if r.avg_duration is not None %}{{ r.avg_duration|floatformat:1 }}{% else %}—{% endif %}</td>
+        <td class="num">{% if r.p95_duration is not None %}{{ r.p95_duration|floatformat:1 }}{% else %}—{% endif %}</td>
+        <td class="num">{% if r.flakiness is not None %}{{ r.flakiness|floatformat:2 }}{% else %}—{% endif %}</td>
+        <td>{% if r.last_status %}<span class="badge {{ r.last_status }}">{{ r.last_status }}</span>{% else %}—{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+</div>
+{% endblock %}

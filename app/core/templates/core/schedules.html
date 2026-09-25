@@ -1,0 +1,108 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% block title %}Schedules — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Weekly schedules</h1>
+  <span class="help">timezone: {{ tz }} (change in Settings)</span>
+  <div class="spacer"></div>
+</div>
+
+<div class="grid-2">
+  <div class="card" data-live="schedules-table">
+    <h2>All schedules</h2>
+    <table class="data">
+      <thead><tr><th>What</th><th>When</th><th>Browser</th><th>Next due</th><th>Last run</th><th></th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>
+            {% if row.s.group %}<a href="{% url 'group_detail' row.s.group.pk %}">group: {{ row.s.group.name }}</a>
+            {% elif row.s.test %}<a href="{% url 'test_detail' row.s.test.test_id %}">{{ row.s.test.test_id }}</a>{% endif %}
+            {% if not row.s.enabled %}<span class="tag">paused</span>{% endif %}
+          </td>
+          <td>{{ row.s.days_display }} {{ row.s.time_of_day|time:"H:i" }}</td>
+          <td>{% if row.s.browser %}{{ row.s.browser }}{% else %}<span class="help">{{ default_browser }} (default)</span>{% endif %}</td>
+          <td>{% if row.next %}{{ row.next|date:"D M j, H:i" }}{% else %}—{% endif %}</td>
+          <td>{% if row.last %}<a href="{% url 'batch_detail' row.last.batch.pk %}">{{ row.last.batch.created_at|date:"M j H:i" }}</a>
+              <div>{% with h=row.last %}{% include "core/_batch_result.html" %}{% endwith %}</div>
+            {% elif row.s.last_fired %}{{ row.s.last_fired|date:"M j H:i" }}{% else %}never{% endif %}</td>
+          <td>
+            <button class="btn small" data-sched-toggle="{{ row.s.pk }}">{% if row.s.enabled %}Pause{% else %}Resume{% endif %}</button>
+            <button class="btn small danger" data-sched-delete="{{ row.s.pk }}">Delete</button>
+          </td>
+        </tr>
+      {% empty %}<tr><td colspan="6"><div class="empty">No schedules yet — add one on the right.</div></td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <p class="help">Schedules only fire while <code>manage.py serve</code> is running.
+    If the hub was down at the slot time, it still fires when it comes back within
+    the catch-up window (config: schedule.catchup_minutes).</p>
+  </div>
+
+  <div class="card">
+    <h2>Add a schedule</h2>
+    <form method="post">
+      {% csrf_token %}
+      <label class="field"><span>Run what?</span>
+        <select name="target" required>
+          <option value="">— pick a test or a group —</option>
+          <optgroup label="Groups (run everything in the group)">
+            {% for g in groups %}<option value="group:{{ g.pk }}">group: {{ g.name }}</option>{% endfor %}
+          </optgroup>
+          <optgroup label="Individual tests">
+            {% for t in tests %}<option value="test:{{ t.test_id }}">{{ t.test_id }} — {{ t.display_name }}</option>{% endfor %}
+          </optgroup>
+        </select></label>
+
+      <label class="field"><span>Days of the week</span><br>
+        {% for d in "0123456"|make_list %}
+          <label class="checkbox"><input type="checkbox" name="days" value="{{ d }}">
+            {% if d == "0" %}Mon{% elif d == "1" %}Tue{% elif d == "2" %}Wed{% elif d == "3" %}Thu{% elif d == "4" %}Fri{% elif d == "5" %}Sat{% else %}Sun{% endif %}</label>
+        {% endfor %}
+      </label>
+
+      <label class="field"><span>Time ({{ tz }})</span>
+        <input type="time" name="time" value="09:00" required></label>
+
+      <label class="field"><span>Browser to simulate on</span>
+        <select name="browser">
+          <option value="">{{ default_browser }} (config default)</option>
+          {% for b in browsers %}<option value="{{ b }}">{{ b }}</option>{% endfor %}
+        </select></label>
+
+      <button class="btn primary" type="submit">Add schedule</button>
+      <p class="help">Test schedules are saved into the test's .json sidecar; group
+      schedules into <code>_groups.json</code> — they travel with the tests folder.</p>
+    </form>
+  </div>
+</div>
+
+<div class="card table-scroll" id="schedule-history" data-live="schedule-history">
+  <h2>Schedule history <span class="sub">what each schedule ran &mdash; the latest {{ history_rows }}; click one for its stats</span></h2>
+  <table class="data">
+    <thead><tr><th>When</th><th>Schedule</th><th>Release</th><th>Result</th><th class="num">Took</th><th></th></tr></thead>
+    <tbody>
+    {% for h in history %}
+      <tr data-batch="{{ h.batch.pk }}">
+        <td><a href="{% url 'batch_detail' h.batch.pk %}">{{ h.batch.created_at|date:"D M j, H:i" }}</a></td>
+        <td>{% with s=h.batch.schedule %}{% if s %}
+            {% if s.group %}<a href="{% url 'group_detail' s.group.pk %}">group: {{ s.group.name }}</a>
+            {% elif s.test %}<a href="{% url 'test_detail' s.test.test_id %}">{{ s.test.test_id }}</a>{% endif %}
+            <span class="help">{{ s.days_display }} {{ s.time_of_day|time:"H:i" }}{% if not s.enabled %} &middot; paused{% endif %}</span>
+          {% else %}{{ h.batch.label }} <span class="help">(schedule since changed or deleted)</span>{% endif %}{% endwith %}</td>
+        <td>{{ h.release|default:"—" }}</td>
+        <td>{% include "core/_batch_result.html" %}</td>
+        <td class="num">{% if h.wall is not None %}{{ h.wall|duration }}{% else %}—{% endif %}</td>
+        <td><a class="btn small" href="{% url 'batch_detail' h.batch.pk %}">Stats</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6"><div class="empty">No schedule has fired yet. Every scheduled run will be listed here,
+        with its result.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

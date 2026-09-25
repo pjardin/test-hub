@@ -1,0 +1,33 @@
+{
+  "id": "DEMO-018",
+  "name": "Freight: load subject (public tracking)",
+  "description": "A short tracking pass meant to be repeated under load. Each step is timed separately, so a load run shows which one degrades when many browsers track shipments at once.",
+  "tags": ["freight", "load", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "video": "off",
+  "schedules": [],
+  "load_plans": [
+    {
+      "name": "Quick smoke (90s, 3 users)",
+      "description": "Three browsers tracking shipments for a minute and a half: enough to see the setup works and get a first per-step picture.",
+      "duration_seconds": 90,
+      "concurrency": 3,
+      "ramp_seconds": 15,
+      "think_time_seconds": 0,
+      "max_iterations": 0,
+      "keep_artifacts": false
+    },
+    {
+      "name": "Rush hour (5 min, 6 users)",
+      "description": "Six browsers for five minutes, ramped over the first minute. Compare it on release 1.0.0 and 1.1.0: the tracking steps are where a slow database shows.",
+      "duration_seconds": 300,
+      "concurrency": 6,
+      "ramp_seconds": 60,
+      "think_time_seconds": 0,
+      "max_iterations": 0,
+      "keep_artifacts": false
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{% extends "freight/base.html" %}
+{% block title %}Choose a new password{% endblock %}
+{% block content %}
+<section class="panel narrow" id="reset-panel">
+  <h1>Choose a new password</h1>
+  <p class="muted">For the staff account <strong id="reset-user">{{ username }}</strong>.</p>
+  {% if shared %}
+  <div class="alert alert-warn" id="reset-shared" role="alert">
+    <strong>{{ username }}</strong> is a shared demo account: the sample tests sign in with its published password,
+    so it cannot be changed here. Try the account <code>driver</code>.
+  </div>
+  {% endif %}
+  <form method="post" class="form" id="reset-form" novalidate>{% csrf_token %}
+    <div class="field">
+      <label for="new-password">New password</label>
+      <input id="new-password" name="password" type="password" autocomplete="new-password"
+             aria-describedby="password-rule">
+      <p class="muted" id="password-rule">At least {{ min_length }} characters.</p>
+    </div>
+    <div class="field">
+      <label for="confirm-password">Repeat the new password</label>
+      <input id="confirm-password" name="confirm" type="password" autocomplete="new-password">
+    </div>
+    {% if error %}<p class="error" id="reset-error" role="alert">{{ error }}</p>{% endif %}
+    <div class="actions"><button class="btn primary" type="submit" id="reset-btn">Change password</button></div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<title>Demo Target — Sign in</title>
+<style>body{font-family:system-ui,sans-serif;background:#f4f6f8;margin:0}
+.w{max-width:420px;margin:60px auto;background:#fff;border:1px solid #d5dbdb;border-radius:10px;padding:28px 32px}
+label{display:block;margin:12px 0 4px;font-size:14px;color:#566573}
+input{width:100%;padding:8px 10px;border:1px solid #aab7b8;border-radius:6px;box-sizing:border-box}
+button{margin-top:16px;padding:9px 18px;border:0;border-radius:6px;background:#2471a3;color:#fff;cursor:pointer}
+.err{margin-top:12px;padding:10px;border-radius:6px;background:#fdedec;border:1px solid #f5b7b1}</style>
+</head><body><div class="w">
+<h1>Sign in</h1>
+<p style="font-size:13px;color:#566573">The demo target's login, so the
+   authenticated security checks have a real flow to observe.
+   Use <code>tester</code> / <code>demo-password</code>.</p>
+<form method="post">{% csrf_token %}
+  <label for="username">Username</label><input id="username" name="username" autocomplete="username">
+  <label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password">
+  <button id="login-btn" type="submit">Sign in</button>
+</form>
+{% if error %}<div class="err" id="login-error">{{ error }}</div>{% endif %}
+</div></body></html>

@@ -1,0 +1,37 @@
+{% extends "freight/ops_base.html" %}
+{% block title %}Route optimizer{% endblock %}
+{% block ops %}
+<h1>Route optimizer</h1>
+<p class="lead">Plan tomorrow's delivery routes: pick a depot region, how many stops and how many trucks. The
+  optimizer starts from a naive plan and improves it iteration by iteration &mdash; you can watch it work.</p>
+<form method="post" class="panel form" id="optimizer-form" novalidate>{% csrf_token %}
+  <div class="row">
+    <div class="field{% if errors.region %} has-error{% endif %}">
+      <label for="region">Region</label>
+      <select id="region" name="region">
+        {% for key, label in regions %}<option value="{{ key }}"{% if key == values.region %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      {% if errors.region %}<p class="error">{{ errors.region }}</p>{% endif %}
+    </div>
+    <div class="field{% if errors.stops %} has-error{% endif %}">
+      <label for="stops">Delivery stops</label>
+      <input id="stops" name="stops" type="number" min="5" max="45" value="{{ values.stops }}">
+      {% if errors.stops %}<p class="error" id="stops-error">{{ errors.stops }}</p>{% endif %}
+    </div>
+    <div class="field{% if errors.trucks %} has-error{% endif %}">
+      <label for="trucks">Trucks</label>
+      <input id="trucks" name="trucks" type="number" min="1" max="8" value="{{ values.trucks }}">
+      {% if errors.trucks %}<p class="error">{{ errors.trucks }}</p>{% endif %}
+    </div>
+  </div>
+  <details class="advanced">
+    <summary>Advanced</summary>
+    <div class="field">
+      <label for="seed">Scenario number (same number = same stops and same plan)</label>
+      <input id="seed" name="seed" type="number" min="0" value="{{ values.seed }}">
+    </div>
+  </details>
+  <div class="actions"><button class="btn primary" type="submit" id="start-optimizer">Start optimization</button></div>
+</form>
+{% include "freight/_recent_jobs.html" %}
+{% endblock %}

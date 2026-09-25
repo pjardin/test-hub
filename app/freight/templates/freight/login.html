@@ -1,0 +1,27 @@
+{% extends "freight/base.html" %}
+{% block title %}Staff sign-in{% endblock %}
+{% block content %}
+<section class="panel narrow">
+  <h1>Staff sign-in</h1>
+  <p class="muted">The Acme Freight staff portal: dashboard, shipments, route planning, imports and reports.</p>
+  <form method="post" class="form" id="login-form" novalidate>{% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <div class="field">
+      <label for="username">Username</label>
+      <input id="username" name="username" value="{{ prefill }}" autocomplete="username"{% if not prefill %} autofocus{% endif %}>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password"{% if prefill %} autofocus{% endif %}>
+    </div>
+    {% if error %}<p class="error" id="login-error" role="alert">{{ error }}</p>{% endif %}
+    <div class="actions"><button class="btn primary" type="submit" id="login-btn">Sign in</button>
+      <a class="btn link" id="forgot-link" href="{% url 'freight:forgot' %}">Forgot your password?</a></div>
+  </form>
+  <div class="demo-creds">
+    <strong>Demo accounts</strong> (password <code>demo-password</code>):
+    {% for key, u in users.items %}<code>{{ key }}</code> ({{ u.role }}){% if not forloop.last %}, {% endif %}{% endfor %}.
+    Managers also see revenue and monthly reports.
+  </div>
+</section>
+{% endblock %}

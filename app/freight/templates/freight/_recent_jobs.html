@@ -1,0 +1,16 @@
+{% if recent %}
+<section class="panel">
+  <h2>Recent runs</h2>
+  <table class="data recent-jobs">
+    <thead><tr><th>What</th><th>State</th><th>Release</th><th class="num">Took</th></tr></thead>
+    <tbody>
+      {% for j in recent %}
+      <tr><td><a href="{% url 'freight:job' j.id %}">{{ j.title }}</a></td>
+          <td><span class="badge state-{{ j.state }}">{{ j.state }}</span></td>
+          <td>{{ j.version }}</td>
+          <td class="num">{% if j.started %}{{ j.elapsed|floatformat:1 }}s{% else %}&ndash;{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}

@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-013",
+  "name": "Freight: find a shipment and add a note",
+  "description": "Staff workflow on the demo site: search and filter the shipments table, sort it, open a shipment, save a note (a JSON request the page makes), and confirm the 'mark delivered' dialog.",
+  "tags": ["freight", "tables", "dialogs", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

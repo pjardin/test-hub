@@ -1,0 +1,46 @@
+{% extends "freight/base.html" %}
+{% block title %}Developers{% endblock %}
+{% block content %}
+<h1>Acme Freight API <span class="badge live">v1</span></h1>
+<p class="lead">Track shipments and price quotes from your own systems: JSON over HTTP, one header to authenticate.</p>
+
+<section class="panel" aria-labelledby="auth-title">
+  <h2 id="auth-title">Authentication and limits</h2>
+  <p>Send your key in the <code>X-API-Key</code> header. These demo keys work on this server:</p>
+  <table class="data" id="api-keys">
+    <thead><tr><th>Key</th><th>Account</th><th>Limit</th></tr></thead>
+    <tbody>{% for key, k in keys.items %}<tr><td><code>{{ key }}</code></td><td>{{ k.name }}</td><td>{{ k.per_minute }} requests per minute</td></tr>{% endfor %}</tbody>
+  </table>
+  <p class="muted">Over the limit, the API answers <code>429 Too Many Requests</code> with a <code>Retry-After</code> header.
+    Money is always a string of exact decimals (<code>"117.62"</code>), never a float.</p>
+</section>
+
+<section class="panel" aria-labelledby="endpoints-title">
+  <h2 id="endpoints-title">Endpoints</h2>
+  <table class="data" id="api-endpoints">
+    <thead><tr><th>Method</th><th>Path</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td><code>status</code></td><td>Is the API up, and which release answers (no key needed)</td></tr>
+      <tr><td>GET</td><td><code>shipments?status=&amp;customer=&amp;limit=&amp;offset=</code></td><td>Search shipments (up to 50 per page)</td></tr>
+      <tr><td>GET</td><td><code>shipments/{id}</code></td><td>One shipment, with its scan history</td></tr>
+      <tr><td>POST</td><td><code>quotes</code></td><td>Price a shipment: <code>origin</code>, <code>destination</code>, <code>weight_kg</code>, optional <code>service</code>, <code>promo</code>, <code>hazardous</code></td></tr>
+    </tbody>
+  </table>
+  <p>Base URL: <code id="api-base">{{ base }}</code></p>
+  <h3>Try it</h3>
+  <pre class="code">curl -H "X-API-Key: acme-demo-7f3a91c2" {{ base }}shipments/AF-100001</pre>
+  <p><button class="btn primary" type="button" id="try-api" data-url="{{ base }}shipments/AF-100001" data-key="acme-demo-7f3a91c2">Send this request</button></p>
+  <pre class="code" id="api-response" hidden></pre>
+  <h3>Pricing a quote</h3>
+  <pre class="code">curl -X POST -H "X-API-Key: acme-demo-7f3a91c2" -H "Content-Type: application/json" \
+     -d '{"origin": "San Francisco", "destination": "San Diego", "weight_kg": 120, "promo": "SPRING10"}' \
+     {{ base }}quotes</pre>
+  <h3>Example response (live, from this server)</h3>
+  <pre class="code" id="api-sample" tabindex="0" aria-label="Sample response">{{ sample }}</pre>
+</section>
+
+<section class="panel" aria-labelledby="changelog-title">
+  <h2 id="changelog-title">API changelog</h2>
+  <ul class="release-notes" id="api-changelog">{% for v, text in changelog %}<li><strong>{{ v }}</strong> &mdash; {{ text }}</li>{% endfor %}</ul>
+</section>
+{% endblock %}

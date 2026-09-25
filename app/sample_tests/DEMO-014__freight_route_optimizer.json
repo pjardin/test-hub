@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-014",
+  "name": "Freight: optimize delivery routes (slow job)",
+  "description": "Starts the route optimizer (a real server-side computation with live progress, 20-50 seconds depending on the release), waits for it, checks the plan and downloads it as CSV. The wait is timed, so the hub charts the optimizer's speed across releases.",
+  "tags": ["freight", "slow", "jobs", "download", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 240,
+  "enabled": true,
+  "schedules": []
+}

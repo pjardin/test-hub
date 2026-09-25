@@ -1,0 +1,75 @@
+{% extends "freight/ops_base.html" %}
+{% block title %}{{ ship.id }}{% endblock %}
+{% block ops %}
+<p><a href="{% url 'freight:shipments' %}">&larr; All shipments</a></p>
+<div class="ship-head">
+  <h1>{{ ship.id }} <span class="badge status-{{ ship.status }}" id="ship-status">{{ ship.status_label }}</span></h1>
+  <div class="ship-actions">
+    <a class="btn" id="print-label" href="{% url 'freight:label' ship.id %}" target="_blank">Print label</a>
+    {% if ship.status != "delivered" %}
+    <form method="post" id="deliver-form" data-confirm="Mark {{ ship.id }} as delivered?">{% csrf_token %}
+      <input type="hidden" name="action" value="deliver">
+      <button class="btn primary" type="submit" id="deliver-btn">Mark delivered</button>
+    </form>
+    {% endif %}
+    {% if ship.status != "delivered" and ship.status != "exception" %}
+    <button class="btn" type="button" id="flag-btn" data-opens="flag-dialog">Flag exception</button>
+    {% endif %}
+  </div>
+</div>
+
+<dialog id="flag-dialog" aria-labelledby="flag-title">
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="action" value="flag">
+    <h2 id="flag-title">Flag {{ ship.id }}</h2>
+    <label for="flag-reason">What went wrong?</label>
+    <select id="flag-reason" name="reason">
+      <option value="">Choose a reason</option>
+      {% for key, label in reasons %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+    </select>
+    <div class="actions">
+      <button class="btn link" type="button" data-close="flag-dialog">Cancel</button>
+      <button class="btn danger" type="submit" id="flag-submit">Flag exception</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="two-col">
+  <section class="panel">
+    <dl class="facts" id="ship-facts">
+      <dt>Customer</dt><dd id="ship-customer">{{ ship.customer }}</dd>
+      <dt>From</dt><dd>{{ ship.origin }}</dd>
+      <dt>To</dt><dd>{{ ship.destination }}</dd>
+      <dt>Service</dt><dd>{{ ship.service }}</dd>
+      <dt>Cargo</dt><dd>{{ ship.weight_kg }} kg, {{ ship.pieces }} piece{{ ship.pieces|pluralize }}</dd>
+      <dt>Booked</dt><dd>{{ ship.created|date:"D j M Y, H:i" }}</dd>
+      <dt>ETA</dt><dd>{{ ship.eta|date:"D j M" }}</dd>
+      <dt>Charged</dt><dd>{{ ship.price }}</dd>
+    </dl>
+  </section>
+  <section class="panel">
+    {% include "freight/_shipment_map.html" with map=ship.map %}
+  </section>
+</div>
+
+<div class="two-col">
+  <section class="panel">
+    <h2>Scan history</h2>
+    <ol class="timeline" id="ship-events">
+      {% for e in ship.events %}<li class="event event-{{ e.code }}"><time>{{ e.when|date:"D j M, H:i" }}</time> <span class="what">{{ e.text }}</span> <span class="where">{{ e.where }}</span></li>{% endfor %}
+    </ol>
+  </section>
+  <section class="panel" aria-labelledby="notes-title">
+    <h2 id="notes-title">Notes</h2>
+    <ul class="notes" id="notes-list">
+      {% for n in ship.notes %}<li class="note"><span class="note-text">{{ n.text }}</span> <span class="muted">&mdash; {{ n.by }}, {{ n.at }}</span></li>{% empty %}<li class="muted empty" id="no-notes">No notes yet.</li>{% endfor %}
+    </ul>
+    <form id="note-form" data-url="{% url 'freight:api_notes' ship.id %}">
+      <label for="note-text">Add a note</label>
+      <textarea id="note-text" name="text" rows="2" maxlength="500"></textarea>
+      <p class="error" id="note-error" role="alert" hidden></p>
+      <div class="actions"><button class="btn" type="submit" id="note-save">Save note</button></div>
+    </form>
+  </section>
+</div>
+{% endblock %}

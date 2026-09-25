@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-T15",
+  "name": "Freight: shipping label in TypeScript",
+  "description": "DEMO-024's checks in TypeScript: the label opens in a new tab (waitForEvent('popup')), its Code 128 barcode is decoded from the bars by the test's own decoder, and the PDF download carries the tracking number.",
+  "tags": ["freight", "typescript", "popup", "barcode", "demo"],
+  "version": "",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

@@ -1,0 +1,116 @@
+{% extends "core/base.html" %}
+{% block title %}Help — Test Hub
+<div class="card">
+  <h2>Seeing how it copes when everyone uses it at once</h2>
+  <p>Any test you already have can be turned into a <strong>load test</strong>:
+     the hub runs it over and over with several browsers at the same time, for
+     as long as you say, then tells you what happened.</p>
+  <ol>
+    <li>Open the test and press <strong>Load test</strong> (or use <strong>Load</strong> in the menu).</li>
+    <li>It shows how long one pass normally takes, and works out roughly how
+        many passes fit in the window you choose.</li>
+    <li>Press start and watch. You can stop it at any time.</li>
+  </ol>
+  <p>What you get back, in plain terms: how much <strong>slower</strong> it got
+     compared with running on its own, how many passes <strong>failed</strong>
+     once things were busy, and — most usefully — <strong>which step</strong>
+     slowed down. "The form submits fine, it is the results page that struggles"
+     is the kind of answer that helps whoever fixes it.</p>
+  <p class="help">Each simultaneous user is a real browser, so the Load page
+     tells you how many this machine can honestly handle. More than that and
+     you are measuring the machine, not the application.</p>
+</div>
+{% endblock %}
+{% block content %}
+
+<div class="page-head"><h1>Help — the 5-minute guide</h1></div>
+
+<div class="grid-2">
+<div>
+  <div class="card">
+    <h2>Try it on the demo site first</h2>
+    <p><a href="{% url 'freight:home' %}">Acme Freight</a> is a make-believe shipping company served by this
+    hub, made to be tested: tracking, quotes, a staff portal and slow jobs you can watch. Its
+    <a href="{% url 'freight:tour' %}">guided tour</a> walks you through running the <strong>Freight
+    regression</strong> group, "deploying" newer releases of the site in its
+    <a href="{% url 'freight:releases' %}">Release console</a>, and watching the hub catch what each one broke.</p>
+  </div>
+
+  <div class="card">
+    <h2>Run tests</h2>
+    <p><strong>Tests</strong> page → the <em>Run</em> button next to any test, or tick
+    several and <em>Run selected</em>. <strong>Groups</strong> run a whole set with one
+    click. The <strong>Dashboard</strong> shows everything currently running, how long
+    it has been going, the estimated time left (shown as <em>null</em> until that test
+    has some history), and a <em>Kill</em> button if you need to stop one.</p>
+  </div>
+
+  <div class="card">
+    <h2>Record a new test — no code needed</h2>
+    <ol style="margin:0 0 0 18px; padding:0; line-height:1.9">
+      <li><strong>Tests → 🎥 Record new test.</strong> A live picture of the app opens.</li>
+      <li><strong>Click and type on the picture</strong> exactly as you would use the app.
+          Every action is captured on the right.</li>
+      <li><strong>Right-click anything to add a CHECK or a WAIT</strong> — the element
+          lights up and a panel opens: <em>Check it says…</em>, <em>Check its value</em>,
+          <em>Check it's visible</em>, <em>Check text/background color</em> (already
+          filled in from the real element), or <em>Wait until it appears / is gone /
+          says…</em> with a how-long picker (5&nbsp;s to 1&nbsp;hour — use a long one for
+          slow back-end steps).</li>
+      <li><strong>Stop recording → Create a new test.</strong> Give it a short ID
+          (suggested automatically from the name) and press <em>Create</em>. Done —
+          run it from the Tests page like any other.</li>
+    </ol>
+    <p class="help">Tip: add at least one CHECK at the end — that is what makes the
+    test able to fail when the app breaks. A recording with no checks only proves
+    the clicks still click.</p>
+  </div>
+
+  <div class="card">
+    <h2>When a test goes red</h2>
+    <ol style="margin:0 0 0 18px; padding:0; line-height:1.9">
+      <li>Open the run (click the red badge anywhere).</li>
+      <li>Read <strong>“What went wrong”</strong> — it says which check failed and what
+          the page actually showed, next to a screenshot of that exact moment.</li>
+      <li>Watch the <strong>Activity replay</strong> to see everything that happened
+          (long waits are skipped automatically).</li>
+      <li>Press <strong>Download report</strong> and attach that single file to your
+          email/ticket — it contains the outcome, the error in plain words, the step
+          timings and the screenshots. Developers can take it from there.</li>
+    </ol>
+    <p class="help">A red test is the system working: it caught something. Only
+    re-record or edit the test if the app <em>intentionally</em> changed.</p>
+  </div>
+</div>
+
+<div>
+  <div class="card">
+    <h2>What the words mean</h2>
+    <table class="data">
+      <tr><td><span class="badge passed">passed</span></td><td>every step and check succeeded</td></tr>
+      <tr><td><span class="badge failed">failed</span></td><td>a check didn't hold, or a step couldn't run — the app (or the test) has a problem</td></tr>
+      <tr><td><span class="badge error">error</span></td><td>the test could not run at all (e.g. browser could not start) — usually a setup issue, not the app</td></tr>
+      <tr><td><span class="badge timeout">timeout</span></td><td>ran longer than the test's time limit</td></tr>
+      <tr><td><span class="badge killed">killed</span></td><td>someone pressed Kill — not a verdict about the app</td></tr>
+      <tr><td><span class="badge aborted">aborted</span></td><td>the hub restarted while this was running — just run it again</td></tr>
+      <tr><td>estimate “null”</td><td>this test hasn't run enough times to predict its duration yet</td></tr>
+      <tr><td>flakiness</td><td>how often the same test flips between pass and fail — 0 is steady, near 1 means unreliable (tell a developer)</td></tr>
+      <tr><td>activity replay</td><td>pictures captured only while the screen was changing — long waits are skipped with a “skipped idle” note</td></tr>
+      <tr><td>step timings</td><td>how long every click/wait took, compared across runs on the test's page</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Good habits</h2>
+    <ul style="margin:0 0 0 18px; padding:0; line-height:1.9">
+      <li>One test = one story (log in, submit one form, check one result).</li>
+      <li>Prefer <em>Wait until…</em> over hoping the page is fast today.</li>
+      <li>Name tests after what they prove: “Order form saves”, not “test 7”.</li>
+      <li>Before a release, run the group and skim the <strong>Metrics</strong> page —
+          <em>Failing now</em> and <em>Step timing trends</em> tell the story fast.</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+{% endblock %}

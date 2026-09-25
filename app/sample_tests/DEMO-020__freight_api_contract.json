@@ -1,0 +1,11 @@
+{
+  "id": "DEMO-020",
+  "name": "Freight: public API contract, auth and limits",
+  "description": "API testing without a browser page: key checks (401), the shipment JSON contract, exact quote money, and the trial key's rate limit (429 with Retry-After). Reports every broken promise in one run.",
+  "tags": ["freight", "api", "security", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "video": "off",
+  "schedules": []
+}

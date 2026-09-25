@@ -1,0 +1,11 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<title>Demo Target — Private</title>
+<style>body{font-family:system-ui,sans-serif;background:#f4f6f8;margin:0}
+.w{max-width:520px;margin:60px auto;background:#fff;border:1px solid #d5dbdb;border-radius:10px;padding:28px 32px}
+a.btn{display:inline-block;margin-top:16px;padding:9px 18px;border-radius:6px;background:#2471a3;color:#fff;text-decoration:none}</style>
+</head><body><div class="w">
+<h1 id="private-heading">Private area</h1>
+<p>Signed in as <strong id="who">{{ user }}</strong>. This page requires a
+   session — fetching it without one redirects to the login.</p>
+<a class="btn" id="logout-btn" href="{% url 'demo_logout' %}">Sign out</a>
+</div></body></html>

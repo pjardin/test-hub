@@ -1,0 +1,11 @@
+{
+  "id": "DEMO-008",
+  "name": "Authenticated flow + session checks",
+  "description": "Logs in to the demo target and verifies session regeneration, access control on a private page, and that logout really invalidates the session.",
+  "tags": ["demo", "security", "auth"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "video": "off",
+  "schedules": []
+}

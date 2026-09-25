@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-T12",
+  "name": "Freight: tracking in TypeScript",
+  "description": "DEMO-010's checks in TypeScript: really on the demo site, a shipment in transit with its scan history, and an unknown number that says so -- web-first assertions that retry until the page agrees.",
+  "tags": ["freight", "typescript", "demo"],
+  "version": "",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

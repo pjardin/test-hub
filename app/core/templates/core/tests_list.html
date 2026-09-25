@@ -1,0 +1,81 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% block title %}Tests — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Tests</h1>
+  <div class="spacer"></div>
+  <button id="run-selected" class="btn primary" disabled>Run selected</button>
+  <a class="btn" href="{% url 'recorder_page' %}"
+     title="Opens the Remote Recorder in THIS tab (no pop-up — works in Safari too); when you stop, you land on a prefilled New Test form">&#127909; Record new test</a>
+  <a class="btn" href="{% url 'groups_list' %}">Groups</a>
+  <a class="btn primary" href="{% url 'test_new' %}">+ New test</a>
+</div>
+
+<form class="filters" method="get">
+  <label class="field"><span>Search</span>
+    <input type="text" name="q" value="{{ query }}" placeholder="id or name"></label>
+  <label class="field"><span>Tag</span>
+    <select name="tag" onchange="this.form.submit()">
+      <option value="">all tags</option>
+      {% for t in all_tags %}<option value="{{ t }}" {% if t == tag %}selected{% endif %}>{{ t }}</option>{% endfor %}
+    </select></label>
+  <button class="btn" type="submit">Filter</button>
+  {% if query or tag %}<a class="btn" href="{% url 'tests_list' %}">Clear</a>{% endif %}
+</form>
+
+<div class="card table-scroll" data-live="tests-table">
+  <table class="data">
+    <thead><tr>
+      <th><input type="checkbox" id="sel-all" title="select all"></th>
+      <th>Test</th><th>Tags</th><th>Recent</th>
+      <th>Last run</th><th class="num">Pass rate</th><th class="num">Avg</th>
+      <th class="num">Runs</th><th></th>
+    </tr></thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td><input type="checkbox" class="sel-test" value="{{ row.test.test_id }}"
+                   {% if not row.test.enabled %}disabled title="disabled"{% endif %}></td>
+        <td>
+          <a href="{% url 'test_detail' row.test.test_id %}"><strong>{{ row.test.test_id }}</strong></a>{% if row.test.test_type == "ts" %} <span class="pill" title="TypeScript: runs under the TS engine's @playwright/test">TS</span>{% endif %}
+          {{ row.test.display_name }}
+          {% if not row.test.enabled %}<span class="tag">disabled</span>{% endif %}
+        </td>
+        <td>{% for t in row.test.tags %}<a class="tag" href="?tag={{ t|urlencode }}">{{ t }}</a>{% endfor %}</td>
+        <td>
+          {% if row.spark.points %}
+          <span class="spark" title="last {{ row.spark.n }} runs: bar height = duration, color = outcome">
+            {% for p in row.spark.points %}<i class="{{ p.status }}" style="height:{{ p.h|floatformat:0 }}%"></i>{% endfor %}
+          </span>
+          {% else %}<span class="help">—</span>{% endif %}
+        </td>
+        <td>{% if row.last %}
+              <a href="{% url 'run_detail' row.last.pk %}"><span class="badge {{ row.last.status }}">{{ row.last.status }}</span></a>
+            {% else %}<span class="help">never ran</span>{% endif %}</td>
+        <td class="num">{% if row.stats.pass_rate is not None %}{{ row.stats.pass_rate|floatformat:0 }}%{% else %}—{% endif %}</td>
+        <td class="num">{% if row.stats.avg_duration is not None %}{{ row.stats.avg_duration|duration }}{% else %}—{% endif %}</td>
+        <td class="num">{{ row.stats.total_runs }}</td>
+        <td>
+          <button class="btn small" data-run-test="{{ row.test.test_id }}"
+                  {% if not row.test.enabled %}disabled{% endif %}>Run</button>
+          <a class="btn small" href="{% url 'test_edit' row.test.test_id %}">Edit</a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="9"><div class="empty">
+        No tests yet. <a href="{% url 'test_new' %}">Create one in the UI</a> or drop
+        <code>&lt;ID&gt;__name.py</code> + <code>.json</code> files into the tests folder
+        and hit Rescan on the dashboard.
+      </div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p class="help">Select several tests and “Run selected” to run them at the same time
+(parallelism is <em>runner.max_parallel</em> in config.json). For a set you run
+regularly, make it a <a href="{% url 'groups_list' %}">group</a> instead.</p>
+
+{% endblock %}

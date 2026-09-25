@@ -1,0 +1,18 @@
+{% extends "freight/base.html" %}
+{% block main_class %}ops{% endblock %}
+{% block content %}
+<div class="ops-layout">
+  <nav class="opsnav" aria-label="Staff portal">
+    <a href="{% url 'freight:ops' %}"{% if section == "dashboard" %} aria-current="page"{% endif %}>Dashboard</a>
+    <a href="{% url 'freight:shipments' %}"{% if section == "shipments" %} aria-current="page"{% endif %}>Shipments</a>
+    <a href="{% url 'freight:optimizer' %}"{% if section == "optimizer" %} aria-current="page"{% endif %}>Route optimizer</a>
+    <a href="{% url 'freight:import' %}"{% if section == "import" %} aria-current="page"{% endif %}>Manifest import</a>
+    <a href="{% url 'freight:docks' %}"{% if section == "docks" %} aria-current="page"{% endif %}>Dock schedule</a>
+    <a href="{% url 'freight:fleet' %}"{% if section == "fleet" %} aria-current="page"{% endif %}>Live fleet</a>
+    <a href="{% url 'freight:reports' %}"{% if section == "reports" %} aria-current="page"{% endif %}>Reports</a>
+  </nav>
+  <section class="ops-body">
+    {% block ops %}{% endblock %}
+  </section>
+</div>
+{% endblock %}

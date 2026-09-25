@@ -1,0 +1,73 @@
+{% extends "freight/base.html" %}
+{% block title %}Release console{% endblock %}
+{% block content %}
+<h1>Release console</h1>
+<p class="lead">Acme Freight ships in five releases. Deploy one, run your tests, deploy the next: the Test Hub
+  records which release every run tested, and its <a href="{% url 'analytics' %}">Analytics</a> page compares them.
+  Each release changes something a tester should notice &mdash; open &ldquo;What the Test Hub should notice&rdquo; for spoilers.</p>
+{% if incident %}
+  <div class="alert alert-error" id="incident-banner" role="alert"><strong>Incident in progress:</strong>
+    {% for key, label in incidents.items %}{% if key == incident %}{{ label }}{% endif %}{% endfor %}.
+    Every other page of the site is affected; this console stays up.</div>
+{% endif %}
+{% if hub_is_demo %}
+  <p class="hub-stamp">The Test Hub stamps new runs with release <strong id="hub-stamp">{{ hub_stamp }}</strong>.</p>
+{% else %}
+  <div class="alert alert-warn" id="hub-elsewhere">The Test Hub is testing another website right now (<code>target.url</code>
+    is set), so a deploy here changes this demo but not the version the hub records.</div>
+{% endif %}
+
+<section class="panel incident-panel" id="incident-panel" aria-labelledby="incident-title">
+  <h2 id="incident-title">Incident simulator</h2>
+  <p>Break the site on purpose and watch the hub notice: take it down, or make every page slow, then run the
+    <strong>Freight smoke</strong> group. Not a release &mdash; a condition, the kind a scheduled run catches at 3&nbsp;a.m.
+    Runs made during an incident count against the deployed release, as they would on a real site: end it before you
+    compare releases on Analytics.</p>
+  <p>Right now: <strong id="incident-state">{% if incident %}{% for key, label in incidents.items %}{% if key == incident %}{{ label }}{% endif %}{% endfor %}{% else %}no incident &mdash; all systems normal{% endif %}</strong></p>
+  <form method="post" class="actions">{% csrf_token %}
+    <input type="hidden" name="action" value="incident">
+    <button class="btn danger" type="submit" name="incident" value="outage" id="incident-outage">Take the site down</button>
+    <button class="btn" type="submit" name="incident" value="slow" id="incident-slow">Make it slow (+2.5 s a page)</button>
+    <button class="btn primary" type="submit" name="incident" value="clear" id="incident-clear">All clear</button>
+  </form>
+</section>
+
+<ol class="releases">
+  {% for item in all %}{% with r=item.r %}
+  <li class="release{% if item.live %} live{% endif %}" data-version="{{ r.version }}">
+    <header>
+      <h2>{{ r.version }} <span class="rname">&ldquo;{{ r.name }}&rdquo;</span></h2>
+      <time>{{ r.date }}</time>
+      {% if item.live %}<span class="badge live" id="live-badge">Live</span>{% endif %}
+    </header>
+    <p>{{ r.summary }}</p>
+    <ul class="release-notes">{% for n in r.notes %}<li>{{ n }}</li>{% endfor %}</ul>
+    <details class="spoilers">
+      <summary>What the Test Hub should notice</summary>
+      <table class="data">
+        <thead><tr><th>What changed</th><th>Where the hub shows it</th></tr></thead>
+        <tbody>{% for what, where in r.spoilers %}<tr><td>{{ what }}</td><td>{{ where }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </details>
+    {% if not item.live %}
+    <form method="post" class="deploy-form" data-confirm="Deploy Acme Freight {{ r.version }} ({{ r.name }})? Runs queued from now on are stamped {{ r.version }}.">{% csrf_token %}
+      <input type="hidden" name="version" value="{{ r.version }}">
+      <button class="btn primary" type="submit" id="deploy-{{ r.version|cut:'.' }}">Deploy {{ r.version }}</button>
+    </form>
+    {% endif %}
+  </li>
+  {% endwith %}{% endfor %}
+</ol>
+
+<h2>Deploy &amp; incident history</h2>
+{% if history %}
+<table class="data" id="deploy-history">
+  <thead><tr><th>When</th><th>What</th><th>By</th></tr></thead>
+  <tbody>{% for h in history %}<tr><td>{{ h.when }}</td>
+    <td>{% if h.what == "outage" %}Outage started (on {{ h.version }}){% elif h.what == "slow" %}Slowdown started (on {{ h.version }}){% elif h.what == "clear" %}Incident cleared{% else %}Deployed {{ h.version }}{% endif %}</td>
+    <td>{{ h.by }}</td></tr>{% endfor %}</tbody>
+</table>
+{% else %}
+<p class="muted">Nothing deployed yet &mdash; the site is running its first release, {{ release.version }}.</p>
+{% endif %}
+{% endblock %}

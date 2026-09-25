@@ -1,0 +1,19 @@
+{% extends "freight/base.html" %}
+{% block title %}Booked {{ booking.id }}{% endblock %}
+{% block content %}
+<section class="panel confirmation" id="booking-confirmation">
+  <h1>Booked!</h1>
+  <p class="lead">Your shipment number is <strong id="booking-id">{{ booking.id }}</strong>.</p>
+  <dl class="facts">
+    <dt>Route</dt><dd>{{ booking.origin }} &rarr; {{ booking.destination }}</dd>
+    <dt>Service</dt><dd>{{ booking.service }}</dd>
+    <dt>Total</dt><dd id="booking-total">{{ booking.total }}</dd>
+    <dt>Estimated delivery</dt><dd>{{ booking.eta }}</dd>
+    <dt>Confirmation sent to</dt><dd>{{ booking.email }}</dd>
+  </dl>
+  <p>
+    <a class="btn primary" id="track-booking" href="{% url 'freight:track' %}?id={{ booking.id }}">Track this shipment</a>
+    <a class="btn link" href="{% url 'freight:quote' %}?restart=1">Get another quote</a>
+  </p>
+</section>
+{% endblock %}

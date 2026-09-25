@@ -1,0 +1,11 @@
+{
+  "id": "DEMO-016",
+  "name": "Freight: monthly report (long wait)",
+  "description": "Checks that dispatchers cannot open reports, then as a manager generates the full monthly report and waits about two minutes for it. Video is off: the activity reel records only the busy moments of a long wait.",
+  "tags": ["freight", "slow", "jobs", "auth", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 420,
+  "enabled": true,
+  "video": "off",
+  "schedules": []
+}

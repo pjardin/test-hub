@@ -1,0 +1,63 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% block title %}Runs — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head"><h1>Run history</h1></div>
+
+<form class="filters" method="get">
+  <label class="field"><span>Test</span>
+    <select name="test" onchange="this.form.submit()">
+      <option value="">all</option>
+      {% for t in test_choices %}<option value="{{ t }}" {% if t == f_test %}selected{% endif %}>{{ t }}</option>{% endfor %}
+    </select></label>
+  <label class="field"><span>Status</span>
+    <select name="status" onchange="this.form.submit()">
+      <option value="">all</option>
+      {% for s in status_choices %}<option value="{{ s }}" {% if s == f_status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select></label>
+  <label class="field"><span>Trigger</span>
+    <select name="trigger" onchange="this.form.submit()">
+      <option value="">all</option>
+      {% for t in trigger_choices %}<option value="{{ t }}" {% if t == f_trigger %}selected{% endif %}>{{ t }}</option>{% endfor %}
+    </select></label>
+  <label class="field"><span>Target version</span>
+    <select name="version" onchange="this.form.submit()">
+      <option value="">all</option>
+      {% for v in version_choices %}<option value="{{ v }}" {% if v == f_version %}selected{% endif %}>{{ v }}</option>{% endfor %}
+    </select></label>
+  {% if f_test or f_status or f_trigger or f_version %}<a class="btn" href="{% url 'runs_list' %}">Clear</a>{% endif %}
+</form>
+
+<div class="card table-scroll" data-live="runs-table">
+  <table class="data">
+    <thead><tr><th>Run</th><th>Test</th><th>Status</th><th>Queued</th>
+      <th class="num">Duration</th><th>Version</th><th>Browser</th><th>Trigger</th><th>Batch</th><th></th></tr></thead>
+    <tbody>
+    {% for r in page %}
+      <tr>
+        <td><a href="{% url 'run_detail' r.pk %}">#{{ r.pk }}</a></td>
+        <td><a href="{% url 'test_detail' r.test.test_id %}">{{ r.test.test_id }}</a></td>
+        <td><span class="badge {{ r.status }}">{{ r.status }}</span></td>
+        <td>{{ r.queued_at|date:"Y-m-d H:i:s" }}</td>
+        <td class="num">{% if r.duration_seconds is not None %}{{ r.duration_seconds|duration }}{% else %}—{% endif %}</td>
+        <td>{{ r.target_version|default:"—" }}</td>
+        <td>{{ r.browser }}</td>
+        <td>{{ r.trigger }}</td>
+        <td>{% if r.batch %}<a href="{% url 'batch_detail' r.batch.pk %}">#{{ r.batch.pk }}</a>{% else %}—{% endif %}</td>
+        <td>{% if r.is_active %}<button class="btn small danger" data-kill-run="{{ r.pk }}">Kill</button>{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="10"><div class="empty">No runs recorded yet.</div></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page.has_other_pages %}
+<p>
+  {% if page.has_previous %}<a class="btn small" href="?page={{ page.previous_page_number }}&test={{ f_test }}&status={{ f_status }}&trigger={{ f_trigger }}&version={{ f_version }}">&larr; newer</a>{% endif %}
+  page {{ page.number }} / {{ page.paginator.num_pages }}
+  {% if page.has_next %}<a class="btn small" href="?page={{ page.next_page_number }}&test={{ f_test }}&status={{ f_status }}&trigger={{ f_trigger }}&version={{ f_version }}">older &rarr;</a>{% endif %}
+</p>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-T13",
+  "name": "Freight: public API in TypeScript",
+  "description": "DEMO-020's API promises in TypeScript, with the request fixture (no page) and expect.soft (every broken promise in one run): key checks, the shipment contract, exact quote money, the trial key's rate limit.",
+  "tags": ["freight", "typescript", "api", "demo"],
+  "version": "",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

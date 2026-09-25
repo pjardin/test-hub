@@ -1,0 +1,48 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="{{ release.version }}">
+<title>Label {{ fields.id }} · Acme Freight</title>
+<link rel="stylesheet" href="{% static 'freight/freight.css' %}">
+</head>
+<body class="label-page">
+<main>
+  <div class="label-toolbar no-print">
+    <button class="btn primary" type="button" id="label-print" data-print>Print</button>
+    <a class="btn" id="label-pdf" href="{% url 'freight:label_pdf' fields.id %}">Download PDF</a>
+    <span class="muted">4 &times; 6 in thermal label &middot; a demo label, not a real shipment</span>
+  </div>
+  <article class="label" id="label" data-shipment="{{ fields.id }}" aria-label="Shipping label {{ fields.id }}">
+    <header class="label-head">
+      <strong>ACME FREIGHT</strong>
+      <span class="label-service" id="label-service" title="{{ fields.service }}">{{ fields.code }}</span>
+    </header>
+    <section class="label-block">
+      <h2>Ship from</h2>
+      <p>{{ fields.customer }}<br>{{ fields.from }}</p>
+    </section>
+    <section class="label-block label-to">
+      <h2>Ship to</h2>
+      <p id="label-to">{{ fields.to }}</p>
+    </section>
+    <dl class="label-facts">
+      <dt>Service</dt><dd>{{ fields.service }}</dd>
+      <dt>Route</dt><dd id="label-route">{{ ship.origin_hub }} &rarr; {{ ship.dest_hub }}</dd>
+      <dt>Weight</dt><dd>{{ fields.weight }}</dd>
+      <dt>Pieces</dt><dd>{{ fields.pieces }}</dd>
+      <dt>Shipped</dt><dd>{{ fields.created }}</dd>
+    </dl>
+    <div class="label-routing" aria-label="Routing: {{ ship.origin_hub }} to {{ ship.dest_hub }}">
+      <span>{{ ship.origin_hub }}</span><span class="arrow" aria-hidden="true">&rarr;</span><span>{{ ship.dest_hub }}</span>
+    </div>
+    <div class="label-barcode">
+      {{ barcode }}
+      <p class="label-number" id="label-number">{{ fields.id }}</p>
+    </div>
+  </article>
+</main>
+<script src="{% static 'freight/freight.js' %}" defer></script>
+</body>
+</html>

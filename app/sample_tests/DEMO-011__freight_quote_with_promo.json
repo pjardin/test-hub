@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-011",
+  "name": "Freight: quote with a promo code",
+  "description": "Walks the four-step quote wizard, applies promo code SPRING10, checks the discount is exactly 10% of the subtotal, books the shipment and tracks the booking.",
+  "tags": ["freight", "forms", "money", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

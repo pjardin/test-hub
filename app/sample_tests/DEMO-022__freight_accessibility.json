@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-022",
+  "name": "Freight: accessibility scan (WCAG 2.1 AA)",
+  "description": "Scans five pages with axe-core (shipped with the hub, runs offline) and fails on the critical and serious WCAG 2.1 AA problems, grouped by rule. The full report is saved as a11y-report.html with the run.",
+  "tags": ["freight", "accessibility", "508", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

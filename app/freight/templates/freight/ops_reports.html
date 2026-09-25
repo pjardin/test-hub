@@ -1,0 +1,25 @@
+{% extends "freight/ops_base.html" %}
+{% block title %}Reports{% endblock %}
+{% block ops %}
+<h1>Monthly operations report</h1>
+<p class="lead">Volumes, on-time performance, revenue by service and lane, and the busiest customers. A full report
+  crunches every shipment of the month and takes a couple of minutes.</p>
+{% if error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}
+<form method="post" class="panel form" id="report-form">{% csrf_token %}
+  <div class="row">
+    <div class="field">
+      <label for="report-month">Month</label>
+      <select id="report-month" name="month">
+        {% for key, label in months %}<option value="{{ key }}"{% if key == values.month %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <fieldset class="field">
+      <legend>Detail</legend>
+      <label class="radio"><input type="radio" name="detail" value="summary"{% if values.detail == "summary" %} checked{% endif %}> Summary (about half a minute)</label>
+      <label class="radio"><input type="radio" name="detail" value="full"{% if values.detail == "full" %} checked{% endif %}> Full (a couple of minutes)</label>
+    </fieldset>
+  </div>
+  <div class="actions"><button class="btn primary" type="submit" id="generate-report">Generate report</button></div>
+</form>
+{% include "freight/_recent_jobs.html" %}
+{% endblock %}

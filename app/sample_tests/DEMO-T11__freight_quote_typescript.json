@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-T11",
+  "name": "Freight: quote in TypeScript (node engine)",
+  "description": "The quote wizard and promo-code check written in TypeScript: runs under the TS engine's @playwright/test while the Python hub provides queue, history, schedules and charts. Requires the TS engine bundle at /opt/pw-ts.",
+  "tags": ["freight", "typescript", "demo"],
+  "version": "",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

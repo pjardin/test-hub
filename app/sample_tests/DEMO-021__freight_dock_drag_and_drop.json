@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-021",
+  "name": "Freight: dock schedule by drag-and-drop",
+  "description": "Drags arriving trucks onto dock doors with page.drag_and_drop: allowed drops land, a hazardous load at a normal door is refused with the reason, and the schedule survives a reload.",
+  "tags": ["freight", "drag-and-drop", "rules", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

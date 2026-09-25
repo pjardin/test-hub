@@ -1,0 +1,23 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="{{ release.version }}">
+<title>Down for maintenance · Acme Freight</title>
+<link rel="stylesheet" href="{% static 'freight/freight.css' %}">
+</head>
+<body class="theme-{{ theme }}">
+<main class="page">
+  <section class="panel maintenance" id="maintenance">
+    <svg class="logo big" viewBox="0 0 32 32" aria-hidden="true"><path d="M3 22 16 5l13 17h-7l-6-8-6 8z"/><path d="M9 26h14"/></svg>
+    <h1>We&rsquo;ll be right back</h1>
+    <p class="lead">Acme Freight is down for scheduled maintenance. Tracking, quotes and the staff portal will
+      return shortly &mdash; your shipments keep moving in the meantime.</p>
+    <p class="muted">HTTP 503 &middot; retry after 5 minutes</p>
+    <p class="hint">Demo control: this outage was switched on in the
+      <a href="{% url 'freight:releases' %}">Release console</a>, which is the one page that stays up.</p>
+  </section>
+</main>
+</body>
+</html>

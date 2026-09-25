@@ -1,0 +1,136 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% block title %}Load run #{{ load_run.pk }} — Test Hub{% endblock %}
+{% block content %}
+<div data-live="load" data-live-manual{% if not load_run.is_active %} data-live-frozen{% endif %}>
+
+<div class="page-head">
+  <h1>Load run #{{ load_run.pk }}
+    <span class="badge {% if load_run.status == 'finished' %}passed{% elif load_run.status == 'running' %}running{% else %}failed{% endif %}"
+          id="lr-status">{{ load_run.status }}</span></h1>
+  <div class="spacer"></div>
+  {% if load_run.is_active %}
+    <button class="btn danger" id="lr-kill" data-load-kill="{{ load_run.pk }}">Stop applying load</button>
+  {% endif %}
+  <a class="btn" href="{% url 'load_list' %}">All load runs</a>
+</div>
+
+<p>
+  <a href="{% url 'test_detail' load_run.test.test_id %}"><strong>{{ load_run.test.test_id }}</strong></a>
+  · <strong>{{ load_run.concurrency }}</strong> simultaneous browser(s)
+  · window {{ load_run.duration_seconds|duration }}
+  {% if load_run.ramp_seconds %}· ramped over {{ load_run.ramp_seconds }}s{% endif %}
+  {% if load_run.think_time_seconds %}· {{ load_run.think_time_seconds }}s think time{% endif %}
+  {% if load_run.target_version %}· target v{{ load_run.target_version }}{% endif %}
+</p>
+
+{% if load_run.is_active %}
+<div class="card" id="lr-live">
+  <h2>In flight</h2>
+  <div class="tiles">
+    <div class="tile"><div class="label">Running now</div><div class="value" id="lr-inflight">—</div></div>
+    <div class="tile"><div class="label">Passes so far</div><div class="value" id="lr-done">—</div>
+      <div class="hint">of ~{{ load_run.projected_iterations }} projected</div></div>
+    <div class="tile"><div class="label">Time left</div><div class="value" id="lr-left">—</div></div>
+    <div class="tile"><div class="label">p95 so far</div><div class="value" id="lr-p95">—</div></div>
+  </div>
+</div>
+{% endif %}
+
+<div class="tiles">
+  <div class="tile"><div class="label">Passes completed</div>
+    <div class="value">{{ summary.completed|default:0 }}</div>
+    <div class="hint">{{ summary.passed|default:0 }} passed · {{ summary.failed|default:0 }} failed</div></div>
+  <div class="tile"><div class="label">Error rate</div>
+    <div class="value">{{ summary.error_rate|default:0 }}<small>%</small></div>
+    <div class="hint">under load</div></div>
+  <div class="tile"><div class="label">Throughput</div>
+    <div class="value">{{ summary.throughput_per_minute|default:0 }}</div>
+    <div class="hint">passes per minute</div></div>
+  <div class="tile"><div class="label">Median (p50)</div>
+    <div class="value">{% if summary.p50 %}{{ summary.p50 }}<small>s</small>{% else %}—{% endif %}</div>
+    <div class="hint">alone it took {{ load_run.baseline_seconds|default:"?" }}s</div></div>
+  <div class="tile"><div class="label">p95</div>
+    <div class="value">{% if summary.p95 %}{{ summary.p95 }}<small>s</small>{% else %}—{% endif %}</div>
+    <div class="hint">1 in 20 was slower than this</div></div>
+  <div class="tile"><div class="label">Slowdown</div>
+    <div class="value">{% if summary.slowdown_x %}{{ summary.slowdown_x }}<small>×</small>{% else %}—{% endif %}</div>
+    <div class="hint">median vs on its own</div></div>
+</div>
+
+{% if summary.slowdown_x %}
+<div class="card">
+  <h2>What this says</h2>
+  <p>
+    On its own this test takes <strong>{{ load_run.baseline_seconds }}s</strong>.
+    With <strong>{{ load_run.concurrency }}</strong> running at once the median
+    became <strong>{{ summary.p50 }}s</strong> — <strong>{{ summary.slowdown_x }}×</strong>
+    slower — and the slowest 5% took over <strong>{{ summary.p95 }}s</strong>.
+    {% if summary.failed %}<strong>{{ summary.failed }}</strong> pass(es) failed outright under load.{% endif %}
+  </p>
+  <p class="help">
+    It managed {{ summary.completed }} passes against a projection of
+    {{ summary.projected }}. A real count well under the projection means the
+    application slowed down — which is the finding, not a problem with the plan.
+  </p>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Response time over the run <span class="sub">flat = shrugged it off; climbing = you found the limit, and where</span></h2>
+  <script id="data-load-timeline" type="application/json">{{ timeline|safe }}</script>
+  <div class="chart-box"><canvas data-chart="loadtimeline" data-src="data-load-timeline"></canvas></div>
+</div>
+
+{% if steps %}
+<div class="card">
+  <h2>Which step got slow <span class="sub">the question a request-per-second number cannot answer</span></h2>
+  <div class="table-scroll">
+  <table class="data">
+    <thead><tr><th>Step</th><th class="num">Samples</th><th class="num">Average</th>
+               <th class="num">p95</th><th class="num">Worst</th></tr></thead>
+    <tbody>
+    {% for s in steps %}
+      <tr><td>{{ s.name }}</td><td class="num">{{ s.count }}</td>
+          <td class="num">{{ s.avg }}s</td><td class="num"><strong>{{ s.p95 }}s</strong></td>
+          <td class="num">{{ s.max }}s</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="help">Sorted by p95 — the top row is where the application hurts most under load.</p>
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <h2>Slowest passes</h2>
+    <table class="data">
+      <thead><tr><th>#</th><th class="num">Took</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for r in slowest %}
+        <tr><td><a href="{% url 'run_detail' r.pk %}">pass {{ r.iteration }}</a></td>
+            <td class="num">{{ r.duration_seconds|floatformat:2 }}s</td>
+            <td><span class="badge {{ r.status }}">{{ r.status }}</span></td></tr>
+      {% empty %}<tr><td colspan="3"><div class="empty">Nothing finished yet.</div></td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Failures under load</h2>
+    <table class="data">
+      <thead><tr><th>#</th><th>Status</th><th>Why</th></tr></thead>
+      <tbody>
+      {% for r in failures %}
+        <tr><td><a href="{% url 'run_detail' r.pk %}">pass {{ r.iteration }}</a></td>
+            <td><span class="badge {{ r.status }}">{{ r.status }}</span></td>
+            <td class="help">{{ r.error_message|truncatechars:90 }}</td></tr>
+      {% empty %}<tr><td colspan="3"><div class="empty">Nothing failed — it held up.</div></td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+{% endblock %}

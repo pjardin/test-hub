@@ -1,0 +1,11 @@
+{
+  "id": "DEMO-019",
+  "name": "Freight: wait for a truck on the live map",
+  "description": "Opens the live fleet map (a page that redraws every two seconds), picks the truck due at its next stop soonest, and waits for that exact arrival. The hard case for recording a run: nothing is ever idle.",
+  "tags": ["freight", "live", "waits", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 240,
+  "enabled": true,
+  "video": "off",
+  "schedules": []
+}

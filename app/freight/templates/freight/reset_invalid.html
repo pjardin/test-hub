@@ -1,0 +1,14 @@
+{% extends "freight/base.html" %}
+{% block title %}This link no longer works{% endblock %}
+{% block content %}
+<section class="panel narrow" id="reset-invalid" data-state="{{ state }}">
+  <h1>This link no longer works</h1>
+  <p id="reset-invalid-why">{% if state == "used" %}It has already been used to change the password &mdash; each reset
+    link works once.{% elif state == "expired" %}It has expired: reset links work for 30 minutes.{% else %}This is not
+    a reset link we sent.{% endif %}</p>
+  <div class="actions">
+    <a class="btn primary" href="{% url 'freight:forgot' %}">Send a new link</a>
+    <a class="btn link" href="{% url 'freight:login' %}">Sign in</a>
+  </div>
+</section>
+{% endblock %}

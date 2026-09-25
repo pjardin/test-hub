@@ -1,0 +1,67 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Test Hub{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'core/style.css' %}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129514;</text></svg>">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{% url 'dashboard' %}">&#129514; Test Hub</a>
+  <nav>
+    {% url 'dashboard' as u %}<a href="{{ u }}" class="{% if request.path == u %}active{% endif %}">Dashboard</a>
+    {% url 'tests_list' as u %}<a href="{{ u }}" class="{% if request.path|slice:':7' == '/tests/' %}active{% endif %}">Tests</a>
+    {% url 'runs_list' as u %}<a href="{{ u }}" class="{% if request.path|slice:':6' == '/runs/' or '/batches/' in request.path %}active{% endif %}">Runs<span id="nav-run-badge" class="nav-badge {% if not nav_active_runs %}zero{% endif %}">{{ nav_active_runs }}</span></a>
+    {% url 'groups_list' as u %}<a href="{{ u }}" class="{% if '/groups/' in request.path %}active{% endif %}">Groups</a>
+    {% url 'schedules_list' as u %}<a href="{{ u }}" class="{% if '/schedules/' in request.path %}active{% endif %}">Schedules</a>
+    {% url 'load_list' as u %}<a href="{{ u }}" class="{% if '/load/' in request.path %}active{% endif %}">Load</a>
+    {% url 'metrics' as u %}<a href="{{ u }}" class="{% if '/metrics/' in request.path %}active{% endif %}">Metrics</a>
+    {% url 'analytics' as u %}<a href="{{ u }}" class="{% if '/analytics/' in request.path %}active{% endif %}">Analytics</a>
+    {% url 'security_page' as u %}<a href="{{ u }}" class="{% if '/security/' in request.path %}active{% endif %}">Security</a>
+    {% url 'settings_page' as u %}<a href="{{ u }}" class="{% if '/settings/' in request.path %}active{% endif %}">Settings</a>
+    {% url 'help_page' as u %}<a href="{{ u }}" class="{% if '/help/' in request.path %}active{% endif %}">Help</a>
+  </nav>
+  <div class="spacer"></div>
+  <span class="target-chip" title="The website under test (target.url in config.json)">
+    testing: <strong>{{ cfg_target_name }}</strong>
+    {% if cfg_target_version %}v{{ cfg_target_version }}{% endif %}
+    {% if cfg_target_is_demo %}&middot; <a href="{% url 'freight:home' %}" title="Acme Freight, the built-in demo site">built-in demo site</a>{% endif %}
+  </span>
+</header>
+
+{# Global activity strip: what is running and what is queued RIGHT NOW, on #}
+{# every page, each row one click from watching it and one from killing    #}
+{# it. Filled by the status poll in app.js; hidden entirely when idle so   #}
+{# an idle hub stays quiet.                                                #}
+<div id="activity-strip" class="activity-strip" hidden></div>
+
+{% if not runner_active %}
+<div class="messages"><div class="msg error">
+  Read-only mode: the runner is not active in this process. Start the hub with
+  <code>python manage.py serve</code> to run tests and fire schedules.
+</div></div>
+{% endif %}
+
+{% if messages %}
+<div class="messages">
+  {% for m in messages %}<div class="msg {{ m.tags }}">{{ m }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<main>{% block content %}{% endblock %}</main>
+
+<footer>
+  Test Hub v{{ app_version }} &middot; hub at <code>{{ cfg_public_url }}</code>
+  &middot; target <code>{{ cfg_target_url }}</code>
+  &middot; <a href="{% url 'admin:index' %}">admin</a>
+</footer>
+
+<script>window.HUB_PREFIX = "{% url 'dashboard' %}".slice(0, -1);</script>
+<script src="{% static 'core/vendor/chart.umd.min.js' %}"></script>
+<script src="{% static 'core/charts.js' %}"></script>
+<script src="{% static 'core/app.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,7 @@
+<figure class="route-map">
+  <svg viewBox="0 0 {{ map.w }} {{ map.h }}" class="map" role="img" aria-label="Route map">
+    <image href="{{ map.basemap }}" x="0" y="0" width="{{ map.w }}" height="{{ map.h }}"/>
+    {% for leg in map.legs %}<path class="leg{% if leg.done %} leg-done{% endif %}" d="{{ leg.d }}"/>{% endfor %}
+    {% for p in map.points %}<g class="stop stop-{{ p.kind }}" data-city="{{ p.name }}"><circle cx="{{ p.x }}" cy="{{ p.y }}" r="5"/><text x="{{ p.x }}" y="{{ p.ly }}">{{ p.name }}</text></g>{% endfor %}
+  </svg>
+</figure>

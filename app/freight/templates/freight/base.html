@@ -1,0 +1,60 @@
+{% load static %}<!DOCTYPE html>
+<html{% if not flags.a11y_regressions %} lang="en"{% endif %}>{# 2.x: the new templates lost the page language #}
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="app-version" content="{{ release.version }}">
+<meta name="app-release" content="{{ release.name }}">
+<title>{% block title %}Acme Freight{% endblock %} · Acme Freight</title>
+<link rel="stylesheet" href="{% static 'freight/freight.css' %}">
+{% if flags.tracker %}{# release 2.1.0's "usage analytics": a third-party host -- the Security page flags it #}
+<script src="https://analytics.acme-metrics.invalid/collect.js" async></script>{% endif %}
+</head>
+<body class="theme-{{ theme }}{% if flags.a11y_regressions %} brand-bright{% endif %}" data-cities-url="{% url 'freight:api_cities' %}">
+<a class="skip" href="#main"{% if flags.a11y_regressions %} aria-hidden="true"{% endif %}>Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="{% url 'freight:home' %}">
+    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M3 22 16 5l13 17h-7l-6-8-6 8z"/><path d="M9 26h14" /></svg>
+    <span>Acme Freight</span>
+  </a>
+  <nav class="mainnav" aria-label="Main">
+    {% url 'freight:home' as u %}<a href="{{ u }}"{% if request.path == u %} aria-current="page"{% endif %}>Home</a>
+    {% url 'freight:track' as u %}<a href="{{ u }}"{% if request.path == u %} aria-current="page"{% endif %}>Track</a>
+    {% url 'freight:quote' as u %}<a href="{{ u }}?restart=1"{% if u in request.path %} aria-current="page"{% endif %}>Get a quote</a>
+    {% url 'freight:ops' as u %}<a href="{{ u }}"{% if u in request.path %} aria-current="page"{% endif %}>Staff portal</a>
+    {% url 'freight:developers' as u %}<a href="{{ u }}"{% if request.path == u %} aria-current="page"{% endif %}>Developers</a>
+  </nav>
+  <div class="spacer"></div>
+  {% if user %}
+    <span class="who">Signed in as <strong id="signed-in-user">{{ user.name }}</strong></span>
+    <a class="signout" href="{% url 'freight:logout' %}" id="sign-out">Sign out</a>
+  {% endif %}
+  <a class="version-badge" id="version-badge" href="{% url 'freight:releases' %}"
+     title="Release {{ release.version }} &ldquo;{{ release.name }}&rdquo; -- open the Release console">v{{ release.version }}</a>
+</header>
+
+{% if flashes %}
+<div class="flashes" role="status" aria-live="polite">
+  {% for level, text in flashes %}<div class="flash flash-{{ level }}">{{ text }}</div>{% endfor %}
+</div>
+{% endif %}
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+
+<main id="main" class="{% block main_class %}page{% endblock %}">
+{% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <p>Acme Freight {{ release.version }} &ldquo;{{ release.name }}&rdquo; &middot; a demo site served by the Test Hub
+     &middot; <a href="{% url 'freight:status' %}">Status</a>
+     &middot; <a href="{% url 'freight:mailbox' %}">Mailbox</a>
+     &middot; <a href="{% url 'freight:releases' %}">Release console</a>
+     &middot; <a href="{% url 'freight:tour' %}">Guided tour</a>
+     &middot; <a href="{% url 'recorder_page' %}?start=freight/">Record a test on this site</a>
+     &middot; <a href="{% url 'dashboard' %}">Open the Test Hub</a></p>
+  <p class="credit">Map data: Made with Natural Earth (public domain). Every company, person and shipment on this site is fictional.</p>
+</footer>
+<script src="{% static 'freight/freight.js' %}" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

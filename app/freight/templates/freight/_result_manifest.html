@@ -1,0 +1,17 @@
+<div class="kpis">
+  <div class="kpi good"><span class="label">Rows priced</span><strong id="import-ok">{{ imported.ok }}</strong></div>
+  <div class="kpi{% if imported.errors %} warn{% endif %}"><span class="label">Rows with problems</span><strong id="import-errors">{{ imported.errors }}</strong></div>
+  <div class="kpi"><span class="label">Total for priced rows</span><strong id="import-total">{{ imported.total_fmt }}</strong></div>
+</div>
+<table class="data" id="manifest-results">
+  <thead><tr><th class="num">Line</th><th>Reference</th><th>From</th><th>To</th><th class="num">kg</th><th>Service</th><th>Result</th></tr></thead>
+  <tbody>
+    {% for r in imported.rows %}
+    <tr class="row-{{ r.status }}" data-line="{{ r.line }}">
+      <td class="num">{{ r.line }}</td><td>{{ r.reference }}</td><td>{{ r.origin }}</td><td>{{ r.destination }}</td>
+      <td class="num">{{ r.weight_kg }}</td><td>{{ r.service }}</td>
+      <td>{% if r.status == "ok" %}${{ r.price }}{% else %}<span class="problem">{{ r.messages|join:"; " }}</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

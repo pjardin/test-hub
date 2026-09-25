@@ -1,0 +1,39 @@
+{% extends "freight/ops_base.html" %}
+{% load static %}
+{% block title %}Dashboard{% endblock %}
+{% block ops %}
+<h1>Operations dashboard</h1>
+<div class="kpis">
+  <div class="kpi"><span class="label">Active shipments</span><strong id="kpi-active">{{ kpis.active }}</strong></div>
+  <div class="kpi"><span class="label">On time (30 days)</span><strong id="kpi-ontime">{% if kpis.on_time_pct is not None %}{{ kpis.on_time_pct }}%{% else %}&ndash;{% endif %}</strong></div>
+  <div class="kpi{% if kpis.exceptions %} warn{% endif %}"><span class="label">Open exceptions</span><strong id="kpi-exceptions">{{ kpis.exceptions }}</strong></div>
+  {% if kpis.revenue %}<div class="kpi"><span class="label">Revenue (30 days)</span><strong id="kpi-revenue">{{ kpis.revenue }}</strong></div>{% endif %}
+</div>
+
+<div class="charts">
+  <figure class="chart wide"><figcaption>Shipments booked per day</figcaption><div class="chart-box"><canvas id="chart-daily"></canvas></div></figure>
+  <figure class="chart"><figcaption>On-time delivery, by week (%)</figcaption><div class="chart-box"><canvas id="chart-ontime"></canvas></div></figure>
+  <figure class="chart"><figcaption>Service mix (30 days)</figcaption><div class="chart-box"><canvas id="chart-services"></canvas></div></figure>
+</div>
+{{ charts|json_script:"dash-charts" }}
+
+<div class="two-col">
+  <section class="panel">
+    <h2>Open exceptions</h2>
+    {% if exceptions %}
+    <table class="data" id="exceptions-table">
+      <thead><tr><th>Shipment</th><th>Customer</th><th>Route</th></tr></thead>
+      <tbody>{% for s in exceptions %}<tr><td><a href="{% url 'freight:shipment' s.id %}">{{ s.id }}</a></td><td>{{ s.customer }}</td><td>{{ s.origin.name }} &rarr; {{ s.destination.name }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% else %}<p class="muted">None. Nice.</p>{% endif %}
+  </section>
+  <section class="panel">
+    <h2>Busiest lanes (30 days)</h2>
+    <table class="data" id="lanes-table">
+      <thead><tr><th>Lane</th><th class="num">Shipments</th></tr></thead>
+      <tbody>{% for l in top_lanes %}<tr><td>{{ l.lane }}</td><td class="num">{{ l.count }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'core/vendor/chart.umd.min.js' %}" defer></script>{% endblock %}

@@ -1,0 +1,15 @@
+{
+  "id": "DEMO-006",
+  "name": "Long job: wait without recording the wait",
+  "description": "Starts a job with a per-second countdown and waits for it to finish. Proves a long wait does not bloat the activity reel or the video.",
+  "tags": [
+    "demo",
+    "slow",
+    "async"
+  ],
+  "version": "1.0",
+  "timeout_seconds": 400,
+  "enabled": true,
+  "schedules": [],
+  "video": "off"
+}

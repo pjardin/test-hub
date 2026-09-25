@@ -1,0 +1,75 @@
+{% extends "core/base.html" %}
+{% block title %}{{ group.name }} — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Group: {{ group.name }}</h1>
+  <div class="spacer"></div>
+  <button class="btn primary" data-run-group="{{ group.pk }}">Run group now</button>
+</div>
+{% if group.description %}<p>{{ group.description }}</p>{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <h2>Members <span class="sub">tick to include, then save</span></h2>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="members">
+      <label class="field"><span>Description</span>
+        <textarea name="description" rows="2">{{ group.description }}</textarea></label>
+      {% for t in all_tests %}
+        <label class="checkbox"><input type="checkbox" name="tests" value="{{ t.pk }}"
+          {% if t.pk in member_ids %}checked{% endif %}>
+          <strong>{{ t.test_id }}</strong>&nbsp;{{ t.display_name }}
+          {% if not t.enabled %}<span class="tag">disabled</span>{% endif %}</label><br>
+      {% endfor %}
+      <hr class="soft">
+      <button class="btn primary" type="submit">Save membership</button>
+    </form>
+    <hr class="soft">
+    <form method="post" onsubmit="return confirm('Delete group {{ group.name }}? Tests and history are kept.')">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete">
+      <button class="btn danger" type="submit">Delete group</button>
+    </form>
+  </div>
+
+  <div data-live="group-side">
+    <div class="card">
+      <h2>Schedules for this group</h2>
+      {% for s in schedules %}
+        <div class="run-row">
+          <div class="grow">{{ s.days_display }} at {{ s.time_of_day|time:"H:i" }}
+            {% if s.browser %}<span class="tag">{{ s.browser }}</span>{% endif %}
+            {% if not s.enabled %}<span class="tag">paused</span>{% endif %}
+            {% if s.last_fired %}<div class="meta">last fired {{ s.last_fired|date:"M j H:i" }}</div>{% endif %}</div>
+          <button class="btn small" data-sched-toggle="{{ s.pk }}">{% if s.enabled %}Pause{% else %}Resume{% endif %}</button>
+          <button class="btn small danger" data-sched-delete="{{ s.pk }}">Delete</button>
+        </div>
+      {% empty %}<div class="empty">None — add one on the <a href="{% url 'schedules_list' %}">Schedules</a> page.</div>{% endfor %}
+    </div>
+
+    {% if chart_grouptrend.labels %}
+    <div class="card">
+      <h2>Group pass rate over time <span class="sub">one point per batch of this group</span></h2>
+      {{ chart_grouptrend|json_script:"data-grouptrend" }}
+      <div class="chart-box short"><canvas data-chart="grouptrend" data-src="data-grouptrend"></canvas></div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <h2>Recent batches of this group</h2>
+      {% for b in batches %}
+        <div class="run-row">
+          <div class="grow"><a href="{% url 'batch_detail' b.pk %}">{{ b.created_at|date:"M j H:i" }} · {{ b.label }}</a>
+            <div class="meta">
+              {% for status, n in b.runs_summary.items %}{{ n }} {{ status }}{% if not forloop.last %}, {% endif %}{% endfor %}
+            </div></div>
+          {% if b.is_active %}<button class="btn small danger" data-kill-batch="{{ b.pk }}">Kill</button>{% endif %}
+        </div>
+      {% empty %}<div class="empty">This group has not run yet.</div>{% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

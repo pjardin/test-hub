@@ -1,0 +1,14 @@
+{
+  "name": "test-hub-ts-engine",
+  "private": true,
+  "description": "The TypeScript test engine the Test Hub runs .spec.ts tests with. `./testhub.sh setup` installs it into .pw-ts/ -- nothing to do here by hand.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "@types/node": "^22.0.0",
+    "typescript": "5.9.3"
+  }
+}

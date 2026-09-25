@@ -1,0 +1,55 @@
+{% extends "freight/base.html" %}
+{% block title %}Track{% if query %} {{ query }}{% endif %}{% endblock %}
+{% block content %}
+<h1>Track a shipment</h1>
+<form class="track-form" method="get" role="search">
+  <label for="track-id">Shipment number</label>
+  <div class="inline">
+    <input id="track-id" name="id" value="{{ query }}" placeholder="AF-100001" autocomplete="off" required>
+    <button class="btn primary" type="submit" id="track-btn">Track</button>
+  </div>
+</form>
+
+{% if not_found %}
+  <div class="alert alert-error" id="track-not-found" role="alert">
+    There is no shipment <strong>{{ query }}</strong>. Check the number on your receipt &mdash; it starts with AF-.
+  </div>
+{% elif booking %}
+  <section class="panel" id="track-result" data-status="booked">
+    <h2>{{ booking.id }} <span class="badge status-booked" id="track-status">Booked</span></h2>
+    <p class="route"><span id="track-origin">{{ booking.origin }}</span> &rarr; <span id="track-destination">{{ booking.destination }}</span></p>
+    <dl class="facts">
+      <dt>Service</dt><dd>{{ booking.service }}</dd>
+      <dt>Weight</dt><dd>{{ booking.weight_kg }} kg</dd>
+      <dt>Booked by</dt><dd>{{ booking.contact }}</dd>
+      <dt>Estimated delivery</dt><dd id="track-eta">{{ booking.eta }}</dd>
+    </dl>
+    <p class="muted">A courier picks it up on the next business day; the first scan appears then.</p>
+  </section>
+{% elif shipment %}
+  <section class="panel" id="track-result" data-status="{{ shipment.status }}">
+    <div class="track-head">
+      <h2>{{ shipment.id }} <span class="badge status-{{ shipment.status }}" id="track-status">{{ shipment.status_label }}</span></h2>
+      <p class="route"><span id="track-origin">{{ shipment.origin }}</span> &rarr; <span id="track-destination">{{ shipment.destination }}</span></p>
+      <dl class="facts">
+        <dt>Service</dt><dd>{{ shipment.service }}</dd>
+        <dt>Weight</dt><dd>{{ shipment.weight_kg }} kg &middot; {{ shipment.pieces }} piece{{ shipment.pieces|pluralize }}</dd>
+        {% if shipment.delivered %}
+          <dt>Delivered</dt><dd id="track-delivered">{{ shipment.delivered|date:"D j M, H:i" }} &middot; {% if shipment.on_time %}on time{% else %}late{% endif %}</dd>
+        {% else %}
+          <dt>Estimated delivery</dt><dd id="track-eta">{{ shipment.eta|date:"D j M" }}</dd>
+        {% endif %}
+        <dt>Route</dt><dd>via {{ shipment.origin_hub }} and {{ shipment.dest_hub }}</dd>
+      </dl>
+    </div>
+    {% include "freight/_shipment_map.html" with map=shipment.map %}
+    <h3>Scan history</h3>
+    <ol class="timeline" id="track-events">
+      {% for e in shipment.events %}
+      <li class="event event-{{ e.code }}"><time>{{ e.when|date:"D j M, H:i" }}</time>
+        <span class="what">{{ e.text }}</span> <span class="where">{{ e.where }}</span></li>
+      {% endfor %}
+    </ol>
+  </section>
+{% endif %}
+{% endblock %}

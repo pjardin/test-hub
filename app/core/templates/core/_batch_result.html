@@ -1,0 +1,1 @@
+{% if h.active %}<span class="badge running">running</span>{% elif not h.total %}<span class="help">no runs</span>{% else %}<span class="badge {% if h.all_passed %}passed{% else %}failed{% endif %}">{{ h.passed }}/{{ h.total }} passed</span>{% for status, n in h.others %} <span class="badge {{ status }}">{{ n }} {{ status }}</span>{% endfor %}{% endif %}

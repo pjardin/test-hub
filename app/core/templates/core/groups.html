@@ -1,0 +1,64 @@
+{% extends "core/base.html" %}
+{% load hubfmt %}
+{% block title %}Groups — Test Hub{% endblock %}
+{% block content %}
+
+<div class="page-head"><h1>Groups</h1><div class="spacer"></div></div>
+
+<div class="grid-2">
+  <div class="card" data-live="groups-table">
+    <h2>All groups <span class="sub">a group runs all of its tests together with one click or one schedule</span></h2>
+    <table class="data">
+      <thead><tr><th>Group</th><th class="num">Tests</th><th>Last run</th><th></th></tr></thead>
+      <tbody>
+      {% for row in groups %}
+        <tr>
+          <td><a href="{% url 'group_detail' row.group.pk %}"><strong>{{ row.group.name }}</strong></a>
+            <div class="help">{{ row.group.description|truncatechars:80 }}</div></td>
+          <td class="num">{{ row.group.tests.count }}</td>
+          <td>{% if row.last %}<a href="{% url 'batch_detail' row.last_batch.pk %}">{{ row.last_batch.created_at|date:"M j H:i" }}</a>
+            <div>{% with h=row.last %}{% include "core/_batch_result.html" %}{% endwith %}</div>{% else %}never run{% endif %}</td>
+          <td><button class="btn small primary" data-run-group="{{ row.group.pk }}">Run group</button></td>
+        </tr>
+      {% empty %}<tr><td colspan="4"><div class="empty">No groups yet — create one on the right.</div></td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>New group</h2>
+    <form method="post">
+      {% csrf_token %}
+      <label class="field"><span>Name</span><input type="text" name="name" required placeholder="Nightly regression"></label>
+      <label class="field"><span>Description</span><textarea name="description" rows="3"></textarea></label>
+      <button class="btn primary" type="submit">Create group</button>
+      <p class="help">Groups are stored in <code>tests/_groups.json</code>, so they travel
+      with the tests folder between machines.</p>
+    </form>
+  </div>
+</div>
+
+<div class="card table-scroll" id="group-history" data-live="group-history">
+  <h2>Recent group runs <span class="sub">every run of a group, however it was started &mdash; the latest {{ history_rows }}; click one for its stats</span></h2>
+  <table class="data">
+    <thead><tr><th>When</th><th>Group</th><th>Started by</th><th>Release</th><th>Result</th><th class="num">Took</th><th></th></tr></thead>
+    <tbody>
+    {% for h in history %}
+      <tr data-batch="{{ h.batch.pk }}">
+        <td><a href="{% url 'batch_detail' h.batch.pk %}">{{ h.batch.created_at|date:"M j, H:i" }}</a></td>
+        <td><a href="{% url 'group_detail' h.batch.group.pk %}">{{ h.batch.group.name }}</a></td>
+        <td>{{ h.source }}{% if h.batch.schedule %} <span class="help">{{ h.batch.schedule.days_display }} {{ h.batch.schedule.time_of_day|time:"H:i" }}</span>{% endif %}</td>
+        <td>{{ h.release|default:"—" }}</td>
+        <td>{% include "core/_batch_result.html" %}</td>
+        <td class="num">{% if h.wall is not None %}{{ h.wall|duration }}{% else %}—{% endif %}</td>
+        <td><a class="btn small" href="{% url 'batch_detail' h.batch.pk %}">Stats</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7"><div class="empty">No group has been run yet. Press <strong>Run group</strong> above,
+        or give a group a schedule &mdash; every run will be listed here.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

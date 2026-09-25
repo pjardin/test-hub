@@ -1,0 +1,114 @@
+{
+  "groups": [
+    {
+      "name": "Smoke",
+      "description": "Fast checks that the target is fundamentally alive. Sample group -- edit or delete freely.",
+      "tests": [
+        "DEMO-001",
+        "DEMO-002",
+        "DEMO-003"
+      ],
+      "schedules": [
+        {
+          "days": [
+            "mon",
+            "wed",
+            "fri"
+          ],
+          "time": "09:00",
+          "enabled": false
+        }
+      ]
+    },
+    {
+      "name": "Freight smoke",
+      "description": "The quick Acme Freight checks (about a minute): tracking, a priced quote, staff sign-in security and the shipments workflow.",
+      "tests": [
+        "DEMO-010",
+        "DEMO-011",
+        "DEMO-012",
+        "DEMO-013"
+      ],
+      "schedules": []
+    },
+    {
+      "name": "Freight regression",
+      "description": "The Acme Freight browser flows, slow jobs and visual check (about four minutes). Run it after each release you deploy in the demo's Release console, then compare the releases on the Analytics page.",
+      "tests": [
+        "DEMO-010",
+        "DEMO-011",
+        "DEMO-012",
+        "DEMO-013",
+        "DEMO-014",
+        "DEMO-015",
+        "DEMO-016",
+        "DEMO-017"
+      ],
+      "schedules": [
+        {
+          "days": [
+            "mon",
+            "tue",
+            "wed",
+            "thu",
+            "fri"
+          ],
+          "time": "07:00",
+          "enabled": false
+        }
+      ]
+    },
+    {
+      "name": "Freight platform",
+      "description": "Beyond the browser flows (about a minute): the public REST API's contract and limits, drag-and-drop dock scheduling, and waiting for a truck on the live fleet map. Kept apart from Freight regression so hubs upgrading from 2.13 receive it with `testhub samples --add-new`.",
+      "tests": [
+        "DEMO-019",
+        "DEMO-020",
+        "DEMO-021"
+      ],
+      "schedules": []
+    },
+    {
+      "name": "Freight extras",
+      "description": "The checks teams usually do by hand (about a minute): a WCAG 2.1 AA accessibility scan, a password reset that goes through email, and reading the barcode on a shipping label. Its own group so hubs upgrading from 2.14 receive it with `testhub samples --add-new`.",
+      "tests": [
+        "DEMO-022",
+        "DEMO-023",
+        "DEMO-024"
+      ],
+      "schedules": []
+    },
+    {
+      "name": "Freight in TypeScript",
+      "description": "The Acme Freight checks written in TypeScript (@playwright/test), run by the same hub with the same history, charts and schedules as the Python ones (about a minute): a priced quote, tracking, the public API, dock drag-and-drop, a shipping label's barcode and a password reset through email. Needs the TS engine at /opt/pw-ts.",
+      "tests": [
+        "DEMO-T11",
+        "DEMO-T12",
+        "DEMO-T13",
+        "DEMO-T14",
+        "DEMO-T15",
+        "DEMO-T16"
+      ],
+      "schedules": []
+    },
+    {
+      "name": "Python and TypeScript, side by side",
+      "description": "Six Acme Freight checks, each written twice -- once in Python, once in TypeScript (about two minutes). Open any pair's run pages to compare them: same replay, same step timings, and the same verdict on every release of the demo site. Needs the TS engine at /opt/pw-ts.",
+      "tests": [
+        "DEMO-010",
+        "DEMO-T12",
+        "DEMO-011",
+        "DEMO-T11",
+        "DEMO-020",
+        "DEMO-T13",
+        "DEMO-021",
+        "DEMO-T14",
+        "DEMO-023",
+        "DEMO-T16",
+        "DEMO-024",
+        "DEMO-T15"
+      ],
+      "schedules": []
+    }
+  ]
+}

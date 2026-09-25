@@ -1,0 +1,11 @@
+{% extends "freight/base.html" %}
+{% block title %}Not for your role{% endblock %}
+{% block content %}
+<section class="panel narrow" id="forbidden">
+  <h1>That page is for {{ needed }}s</h1>
+  <p>You are signed in as <strong>{{ user.name }}</strong> ({{ user.role }}). Monthly reports include revenue,
+     so they are limited to managers.</p>
+  <p><a class="btn" href="{% url 'freight:logout' %}">Sign out</a> and sign in as <code>manager</code>, or go back to the
+     <a href="{% url 'freight:ops' %}">dashboard</a>.</p>
+</section>
+{% endblock %}

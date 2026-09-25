@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-015",
+  "name": "Freight: import a manifest (upload + download)",
+  "description": "Builds a 30-row CSV with three deliberate mistakes, uploads it, waits for the server to check and price every row, verifies the three problems were caught, and downloads the processed file.",
+  "tags": ["freight", "upload", "download", "jobs", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 150,
+  "enabled": true,
+  "schedules": []
+}

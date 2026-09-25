@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-004",
+  "name": "Work, wait, then results",
+  "description": "Demonstrates the activity replay: UI work, a ~20s idle wait, then results. The replay skips the idle stretch.",
+  "tags": ["demo", "async", "slow"],
+  "version": "1.0",
+  "timeout_seconds": 180,
+  "enabled": true,
+  "schedules": []
+}

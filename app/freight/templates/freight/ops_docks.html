@@ -1,0 +1,35 @@
+{% extends "freight/ops_base.html" %}
+{% block title %}Dock schedule{% endblock %}
+{% block ops %}
+<h1>Dock schedule <span class="muted">&mdash; Oakland depot, today</span></h1>
+<p class="lead">Drag each arriving truck onto a door and an hour. The yard&rsquo;s rules apply: hazardous loads only at
+  Door&nbsp;4 (hazmat), anything over 1,000&nbsp;kg only at a forklift door (1 or 2), one truck per door per hour.
+  No mouse? Every card also has a door-and-hour menu.</p>
+<div class="alert alert-error" id="dock-error" role="alert" hidden></div>
+<div class="dock-toolbar">
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="auto">
+    <button class="btn primary" type="submit" id="docks-auto">Auto-schedule</button></form>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="clear">
+    <button class="btn" type="submit" id="docks-clear">Clear the board</button></form>
+</div>
+<div class="docks" id="docks" data-url="{% url 'freight:api_docks' %}">
+  <section class="panel arrivals" id="arrivals" aria-labelledby="arrivals-title">
+    <h2 id="arrivals-title">Arriving today <span class="badge" id="waiting-count">{{ waiting|length }}</span></h2>
+    {% for a in waiting %}{% include "freight/_dock_card.html" with a=a placed=False %}
+    {% empty %}<p class="muted" id="all-placed">Every truck has a door.</p>{% endfor %}
+  </section>
+  <section class="panel yard" aria-labelledby="yard-title">
+    <h2 id="yard-title">Doors</h2>
+    <table class="dock-grid" id="dock-grid">
+      <thead><tr><th>Hour</th>
+        {% for d, name, kind in doors %}<th data-door="{{ d }}">{{ name }}{% if kind == "forklift" %} <span class="tag">forklift</span>{% elif kind == "hazmat" %} <span class="tag hazmat">hazmat</span>{% endif %}</th>{% endfor %}
+      </tr></thead>
+      <tbody>
+        {% for row in rows %}<tr><th scope="row">{{ row.slot }}</th>
+          {% for c in row.cells %}<td class="dock-cell" data-cell="{{ c.key }}" data-door="{{ c.door }}" data-slot="{{ row.slot }}">{% if c.arrival %}{% include "freight/_dock_card.html" with a=c.arrival placed=True %}{% endif %}</td>{% endfor %}
+        </tr>{% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

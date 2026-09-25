@@ -1,0 +1,10 @@
+{
+  "id": "DEMO-005",
+  "name": "Visual comparison (screenshot vs baseline)",
+  "description": "Pattern for image comparison with OpenCV + scikit-image. First run saves a baseline; later runs fail if the page looks too different and leave a red-marked diff image behind.",
+  "tags": ["demo", "visual", "image"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "schedules": []
+}

@@ -1,0 +1,82 @@
+{% extends "freight/base.html" %}
+{% block title %}Guided tour{% endblock %}
+{% block content %}
+<h1>A guided tour: what the Test Hub can do</h1>
+<p class="lead">Acme Freight is a make-believe shipping company that exists to be tested. It runs entirely on this
+  server &mdash; maps, data and all &mdash; so everything below works on an air-gapped network. Twenty minutes, start
+  to finish.</p>
+
+<ol class="tour">
+  <li>
+    <h2>Meet the site</h2>
+    <p><a href="{% url 'freight:track' %}?id=AF-100001">Track AF-100001</a>, <a href="{% url 'freight:quote' %}?restart=1">get a quote</a>
+      (promo code <code>SPRING10</code>), then <a href="{% url 'freight:login' %}">sign in to the staff portal</a> as
+      <code>tester</code> / <code>demo-password</code> and start the <a href="{% url 'freight:optimizer' %}">route optimizer</a>:
+      it plans delivery routes on the server and you can watch it improve.</p>
+  </li>
+  <li>
+    <h2>Run the regression suite</h2>
+    <p>In the Test Hub, open <a href="{% url 'groups_list' %}">Groups</a> &rarr; <strong>Freight regression</strong> &rarr; <strong>Run</strong>.
+      Watch the live view from the <a href="{% url 'dashboard' %}">dashboard</a>. When a run finishes, open it: video,
+      Playwright trace, the activity reel (it skips the boring waits), a screenshot per step, and the time every step took.</p>
+  </li>
+  <li>
+    <h2>Ship new releases, and let the hub notice</h2>
+    <p>Open the <a href="{% url 'freight:releases' %}">Release console</a>, deploy the next release, run the group again.
+      Repeat through 3.0.0. What each release breaks or improves:</p>
+    <table class="data">
+      <thead><tr><th>Release</th><th>What changed</th><th>Where the hub shows it</th></tr></thead>
+      <tbody>
+        {% for r in releases %}{% for what, where in r.spoilers %}
+        <tr>{% if forloop.first %}<td rowspan="{{ r.spoilers|length }}"><strong>{{ r.version }}</strong> {{ r.name }}</td>{% endif %}<td>{{ what }}</td><td>{{ where }}</td></tr>
+        {% endfor %}{% endfor %}
+      </tbody>
+    </table>
+    <p>Then open <a href="{% url 'analytics' %}">Analytics</a>: every test &times; every release, pass rates, and which
+      tests got slower or faster. <a href="{% url 'security_page' %}">Security</a> shows what the 2.1.0 hotfix
+      quietly broke, and <a href="{% url 'metrics' %}">Metrics</a> has the per-test trends.</p>
+  </li>
+  <li>
+    <h2>Beyond clicking pages: an API, drag-and-drop, live data</h2>
+    <p>Run the <strong>Freight platform</strong> group. <strong>DEMO-020</strong> tests the
+      <a href="{% url 'freight:developers' %}">public REST API</a> with no page at all &mdash; keys, the JSON contract,
+      exact money, the rate limit &mdash; and lists every broken promise in one run (deploy 2.0.0 and it has one to
+      report). <strong>DEMO-021</strong> drags trucks onto the <a href="{% url 'freight:docks' %}">dock schedule</a> and
+      checks that the yard's rules refuse a hazardous load at the wrong door. <strong>DEMO-019</strong> picks a truck on
+      the <a href="{% url 'freight:fleet' %}">live fleet map</a> and waits for exactly that arrival.</p>
+  </li>
+  <li>
+    <h2>The checks people still do by hand</h2>
+    <p>Run the <strong>Freight extras</strong> group. <strong>DEMO-022</strong> scans five pages for WCAG 2.1 AA
+      accessibility problems (what Section 508 asks for) with the same engine commercial scanners use &mdash; it runs
+      offline &mdash; and saves a full report with the run; the 2.0 redesign fails it while looking perfectly fine.
+      <strong>DEMO-023</strong> resets a password through email: it waits for the message in the
+      <a href="{% url 'freight:mailbox' %}">Mailbox</a>, follows the link, and checks the link then stops working
+      (on 2.1.0 it does not). <strong>DEMO-024</strong> opens a shipping label in a new tab and reads its barcode the
+      way a depot scanner would.</p>
+  </li>
+  <li>
+    <h2>Break it on purpose</h2>
+    <p>In the <a href="{% url 'freight:releases' %}#incident-panel">Release console</a>, <em>Take the site down</em>,
+      then run <strong>Freight smoke</strong>: every test fails within seconds and says the site is failing &mdash; not
+      that a button went missing. The <a href="{% url 'freight:status' %}">status page</a> stays up and says so too.
+      Try <em>Make it slow</em> as well, then <em>All clear</em>.</p>
+  </li>
+  <li>
+    <h2>Put it under load</h2>
+    <p>Open <strong>DEMO-018</strong> &rarr; <a href="{% url 'load_list' %}">Load</a> &rarr; <em>Quick smoke</em>. Real browsers hammer
+      the tracking page; the result names the step that degraded. Try it on 1.0.0 and on 1.1.0.</p>
+  </li>
+  <li>
+    <h2>Write your own test in two minutes</h2>
+    <p>Open the <a href="{% url 'recorder_page' %}?start=freight/">Recorder on this site</a>: the hub's own browser
+      opens Acme Freight, you click through a quote on the picture, right-click anything to add a check, and save it
+      as a new test &mdash; in Python or TypeScript.</p>
+  </li>
+  <li>
+    <h2>Or drive it from a terminal</h2>
+    <p><code>testhub run DEMO-014</code> queues a run and returns at once; <code>testhub watch</code> follows it;
+      <code>testhub tui</code> is the whole hub in a terminal window.</p>
+  </li>
+</ol>
+{% endblock %}

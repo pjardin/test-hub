@@ -1,0 +1,11 @@
+{
+  "id": "DEMO-017",
+  "name": "Freight: visual check of the home page",
+  "description": "Screenshot comparison (OpenCV + scikit-image) against a blessed baseline: tiny changes pass, a redesign fails with a red-marked image of what moved. Delete DEMO-017__baseline.png in the tests folder to re-bless after an intended change.",
+  "tags": ["freight", "visual", "image", "demo"],
+  "version": "1.0",
+  "timeout_seconds": 120,
+  "enabled": true,
+  "video": "off",
+  "schedules": []
+}

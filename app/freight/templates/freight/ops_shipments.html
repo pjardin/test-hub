@@ -1,0 +1,65 @@
+{% extends "freight/ops_base.html" %}
+{% block title %}Shipments{% endblock %}
+{% block ops %}
+<h1>Shipments</h1>
+<form class="filters" method="get" id="shipment-filters" role="search">
+  <div class="field grow">
+    <label for="shipment-search">Search</label>
+    <input id="shipment-search" name="q" value="{{ filters.q }}" placeholder="Shipment number, customer or city">
+  </div>
+  <div class="field">
+    <label for="status-filter">Status</label>
+    <select id="status-filter" name="status">
+      <option value="">Any status</option>
+      {% for key, label in statuses %}<option value="{{ key }}"{% if filters.status == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label for="service-filter">Service</label>
+    <select id="service-filter" name="service">
+      <option value="">Any service</option>
+      {% for key, label in services %}<option value="{{ key }}"{% if filters.service == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <input type="hidden" name="sort" value="{{ sort }}">
+  <div class="field actions">
+    <button class="btn primary" type="submit" id="apply-filters">Search</button>
+    <a class="btn link" href="{% url 'freight:shipments' %}" id="clear-filters">Clear</a>
+  </div>
+</form>
+
+<p class="result-count" id="result-count" aria-live="polite">{% if total %}Showing {{ first }}&ndash;{{ last }} of {{ total }} shipment{{ total|pluralize }}{% else %}No shipments match{% endif %}</p>
+
+{% if rows %}
+<table class="data" id="shipments-table">
+  <thead><tr>
+    {% for key, label in columns %}
+      {% with desc="-"|add:key %}
+      <th scope="col"{% if sort == key %} aria-sort="ascending"{% elif sort == desc %} aria-sort="descending"{% endif %}>
+        <a href="?q={{ filters.q|urlencode }}&amp;status={{ filters.status }}&amp;service={{ filters.service }}&amp;sort={% if sort == key %}{{ desc }}{% else %}{{ key }}{% endif %}" data-sort="{{ key }}">{{ label }}</a>
+      </th>
+      {% endwith %}
+    {% endfor %}
+  </tr></thead>
+  <tbody>
+    {% for r in rows %}
+    <tr data-id="{{ r.s.id }}">
+      <td><a href="{% url 'freight:shipment' r.s.id %}">{{ r.s.id }}</a></td>
+      <td>{{ r.s.customer }}</td>
+      <td>{{ r.s.origin.name }}</td>
+      <td>{{ r.s.destination.name }}</td>
+      <td>{{ r.service }}</td>
+      <td><span class="badge status-{{ r.status }}">{{ r.status_label }}</span></td>
+      <td>{{ r.s.created|date:"j M" }}</td>
+      <td>{{ r.s.eta|date:"j M" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<nav class="pager" aria-label="Pages">
+  {% if page_no > 1 %}<a class="btn" id="prev-page" href="?q={{ filters.q|urlencode }}&amp;status={{ filters.status }}&amp;service={{ filters.service }}&amp;sort={{ sort }}&amp;page={{ page_no|add:'-1' }}">Previous</a>{% endif %}
+  <span id="page-info">Page {{ page_no }} of {{ pages }}</span>
+  {% if page_no < pages %}<a class="btn" id="next-page" href="?q={{ filters.q|urlencode }}&amp;status={{ filters.status }}&amp;service={{ filters.service }}&amp;sort={{ sort }}&amp;page={{ page_no|add:'1' }}">Next</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

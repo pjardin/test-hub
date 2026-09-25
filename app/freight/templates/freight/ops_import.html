@@ -1,0 +1,27 @@
+{% extends "freight/ops_base.html" %}
+{% block title %}Manifest import{% endblock %}
+{% block ops %}
+<h1>Manifest import</h1>
+<p class="lead">Upload a customer's manifest (CSV). Every row is checked and priced on the server; problems come
+  back with the line, the column and what to fix.</p>
+{% if error %}<div class="alert alert-error" id="import-error" role="alert">{{ error }}</div>{% endif %}
+<div class="two-col">
+  <form method="post" enctype="multipart/form-data" class="panel form" id="import-form">{% csrf_token %}
+    <h2>Upload a file</h2>
+    <div class="field">
+      <label for="manifest-file">Manifest (CSV, up to 512 KB)</label>
+      <input id="manifest-file" name="manifest" type="file" accept=".csv,text/csv">
+    </div>
+    <div class="actions"><button class="btn primary" type="submit" id="upload-btn">Upload and process</button></div>
+  </form>
+  <section class="panel">
+    <h2>No file handy?</h2>
+    <p><a href="{% url 'freight:sample_manifest' %}" id="sample-download" download>Download the sample manifest</a>
+       (40 rows, 5 of them with deliberate mistakes), or process it straight away:</p>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="sample">
+      <button class="btn" type="submit" id="use-sample">Process the sample manifest</button></form>
+    <p class="hint">Columns: <code>{{ columns|join:", " }}</code></p>
+  </section>
+</div>
+{% include "freight/_recent_jobs.html" %}
+{% endblock %}

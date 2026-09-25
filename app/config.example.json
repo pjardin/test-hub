@@ -1,0 +1,48 @@
+{
+  "_comment": "Copy to <home>/config.json (next to the app/ folder). This is the ONE file that differs per machine -- laptop, office network, or AWS.",
+
+  "site": {
+    "_comment": "Where THIS hub listens. 127.0.0.1 = this machine only; 0.0.0.0 = reachable from the network / AWS. url_prefix (e.g. /testhub) lets the hub share a domain with the app under test behind an ALB/nginx path rule -- see docs/AWS.md. behind_proxy trusts X-Forwarded-* (set ONLY behind your own proxy).",
+    "host": "127.0.0.1",
+    "port": 8880,
+    "url_prefix": "",
+    "public_url": "",
+    "behind_proxy": false
+  },
+
+  "target": {
+    "_comment": "The website UNDER TEST. Empty url = the hub's own /demo/ page (works fully offline). version is stamped onto every run and powers the per-version charts.",
+    "name": "My application",
+    "url": "",
+    "version": "1.0.0"
+  },
+
+  "paths": {
+    "_comment": "Empty = <home>/data. Holds tests/, results/, db.sqlite3. Never deleted by app upgrades.",
+    "data_dir": ""
+  },
+
+  "runner": {
+    "max_parallel": 2,
+    "default_timeout_seconds": 300,
+    "browser": "chromium",
+    "headed": false,
+    "video": false,
+    "trace": true,
+    "live_screenshots": true,
+    "activity_frames": true,
+    "python": ""
+  },
+
+  "schedule": {
+    "timezone": "America/Los_Angeles",
+    "catchup_minutes": 60
+  },
+
+  "maintenance": {
+    "_comment": ">0 prunes run ARTIFACTS (videos/traces) older than N days at startup. DB history and charts are always kept.",
+    "retention_days": 0
+  },
+
+  "debug": false
+}
